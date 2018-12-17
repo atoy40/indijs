@@ -9,45 +9,51 @@
 
 class Indi : public Napi::ObjectWrap<Indi>, private INDI::BaseClient
 {
-  public:
-    Indi(const Napi::CallbackInfo &);
-    void reset() { _callback.reset(); };
-    Napi::Value Connect(const Napi::CallbackInfo &);
-    Napi::Value Disconnect(const Napi::CallbackInfo &);
-    static Napi::Function GetClass(Napi::Env);
+public:
+  Indi(const Napi::CallbackInfo &);
 
-  private:
+  Napi::Value Connect(const Napi::CallbackInfo &);
+  Napi::Value Disconnect(const Napi::CallbackInfo &);
+  Napi::Value SendNewSwitch(const Napi::CallbackInfo &);
 
-    class ConnectWorker;
+  void reset() { _callback.reset(); };
 
-    // INDI::BaseClient implementation.
-    void newDevice(INDI::BaseDevice *dp);
+  static Napi::Function GetClass(Napi::Env);
 
-    void removeDevice(INDI::BaseDevice *dp) { };
-    void newProperty(INDI::Property *property);
-    void removeProperty(INDI::Property *property) { };
-    void newBLOB(IBLOB *bp) { };
-    void newSwitch(ISwitchVectorProperty *svp) { };
-    void newNumber(INumberVectorProperty *nvp) { };
-    void newText(ITextVectorProperty *tvp) { };
-    void newLight(ILightVectorProperty *lvp) { };
-    void newMessage(INDI::BaseDevice *dp, int messageID) { };
-    void serverConnected();
-    void serverDisconnected(int exit_code);
+private:
+  class ConnectWorker;
 
-    std::shared_ptr<ThreadSafeCallback> _callback;
+  // INDI::BaseClient implementation.
+  void newDevice(INDI::BaseDevice *dp);
+  void newProperty(INDI::Property *property);
+  void serverConnected();
+  void serverDisconnected(int exit_code);
+  void removeDevice(INDI::BaseDevice *dp);
+  void removeProperty(INDI::Property *property);
+
+  void newBLOB(IBLOB *bp){};
+  void newSwitch(ISwitchVectorProperty *svp);
+  void newNumber(INumberVectorProperty *nvp);
+  void newText(ITextVectorProperty *tvp){};
+  void newLight(ILightVectorProperty *lvp){};
+  void newMessage(INDI::BaseDevice *dp, int messageID){};
+
+  // helper
+  Napi::Object prop2obj(Napi::Env env, INDI::Property *property);
+
+  std::shared_ptr<ThreadSafeCallback> _callback;
 };
 
-class Indi::ConnectWorker : public Napi::AsyncWorker {
-  public:
-    ConnectWorker(Napi::Function& callback, Napi::Promise::Deferred& deferred, Indi *client) : Napi::AsyncWorker(callback), _deferred(deferred), _client(client) {};
+class Indi::ConnectWorker : public Napi::AsyncWorker
+{
+public:
+  ConnectWorker(Napi::Function &callback, Napi::Promise::Deferred &deferred, Indi *client) : Napi::AsyncWorker(callback), _deferred(deferred), _client(client){};
 
-    void Execute();
-    void OnOK();
-    void OnError(const Napi::Error& e);
+  void Execute();
+  void OnOK();
+  void OnError(const Napi::Error &e);
 
-  private:
-    Napi::Promise::Deferred _deferred;
-    Indi *_client;
-    bool _result;
+private:
+  Napi::Promise::Deferred _deferred;
+  Indi *_client;
 };

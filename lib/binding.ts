@@ -11,27 +11,50 @@ enum PropertyType {
 }
 
 interface IDevice {
-  getDeviceName() : string;
+  getDeviceName(): string;
 }
 
 interface IProperty {
-  getName() : string;
-  getType() : PropertyType;
-  getLabel() : string;
-  getGroupName() : string;
-  getDeviceName() : string;
-  getTimestamp() : string;
+  getName(): string;
+  getType(): PropertyType;
+  getLabel(): string;
+  getGroupName(): string;
+  getDeviceName(): string;
+  getTimestamp(): string;
+}
+
+interface BaseVector {
+  name: string;
+  label: string;
+  dimension: number;
+}
+
+interface NumberVector extends BaseVector {
+  values: { [name: string]: NumberElement };
+}
+
+interface NumberElement {
+  name: string;
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
 }
 
 interface IEventEmitter {
   on(event: "device", listener: (device: IDevice) => void): this;
-  on(event: "property", listener: (property: IProperty) => void): this;
   on(event: string, listener: Function): this;
 }
 
 interface IIndiNative {
   connect(callback: Function): Promise<void>;
   disconnect(): void;
+  sendNewSwitch(
+    deviceName: string,
+    propertyName: string,
+    elementName: string
+  ): void;
 }
 
 class Indi {
@@ -43,11 +66,15 @@ class Indi {
   async connect() {
     //this._addonInstance.connect(this._events.emit.bind(this._events));
     await this._addonInstance.connect(this._events.emit.bind(this._events));
-    return this._events;
+    return this._events as IEventEmitter;
   }
 
   disconnect() {
     this._addonInstance.disconnect();
+  }
+
+  sendNewSwitch(deviceName: string, propertyName: string, elementName: string) {
+    this._addonInstance.sendNewSwitch(deviceName, propertyName, elementName);
   }
 
   // private members
