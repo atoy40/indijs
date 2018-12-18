@@ -103,11 +103,20 @@ Napi::Value Property::GetTimestamp(const Napi::CallbackInfo &info)
   return Napi::String::New(env, _property->getTimestamp());
 }
 
+Napi::Value Property::GetOwnPropertyNames(const Napi::CallbackInfo &info)
+{
+  Napi::Array propNames = Napi::Array::New(info.Env());
+  propNames.Set((uint32_t)0, "name");
+
+  return propNames;
+}
+
 void Property::GetClass(Napi::Env env, Napi::Object exports)
 {
   Napi::HandleScope scope(env);
 
   Napi::Function func = DefineClass(env, "Property", {
+                                                         InstanceMethod("keys", &Property::GetOwnPropertyNames),
                                                          Property::InstanceMethod("getName", &Property::GetName),
                                                          Property::InstanceMethod("getType", &Property::GetType),
                                                          Property::InstanceMethod("getLabel", &Property::GetLabel),

@@ -1,6 +1,7 @@
 #include "indi.h"
 #include "property.h"
 #include "number.h"
+#include "numbervalue.h"
 
 Indi::Indi(const Napi::CallbackInfo &info) : ObjectWrap(info)
 {
@@ -52,7 +53,8 @@ Napi::Value Indi::Connect(const Napi::CallbackInfo &info)
 
     Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
     Napi::Function cb = info[0].As<Napi::Function>();
-    ConnectWorker *wk = new ConnectWorker(cb, deferred, this); // the cb is never call because this async simply resolve a promise.
+    // the cb is never call because this async simply resolve a promise.
+    ConnectWorker *wk = new ConnectWorker(cb, deferred, this);
     wk->Queue();
 
     return deferred.Promise();
@@ -181,8 +183,8 @@ Napi::Object Indi::nvp2obj(Napi::Env env, INumberVectorProperty *nvp)
 void Indi::newProperty(INDI::Property *property)
 {
     _callback->call([this, property](Napi::Env env, std::vector<napi_value> &args) {
-        // Napi::Object prop = Property::NewInstance(Napi::External<INDI::Property>::New(env, property));
-        args = {Napi::String::New(env, "newProperty"), prop2obj(env, property)};
+        args = {Napi::String::New(env, "newProperty"), Property::NewInstance(Napi::External<INDI::Property>::New(env, property))};
+        //args = {Napi::String::New(env, "newProperty"), prop2obj(env, property)};
     });
 };
 
@@ -202,7 +204,8 @@ void Indi::removeProperty(INDI::Property *property)
 void Indi::newNumber(INumberVectorProperty *nvp)
 {
     _callback->call([this, nvp](Napi::Env env, std::vector<napi_value> &args) {
-        args = {Napi::String::New(env, "newNumber"), nvp2obj(env, nvp)};
+        args = {Napi::String::New(env, "newNumber"), Number::NewInstance(Napi::External<INumberVectorProperty>::New(env, nvp))};
+        //args = {Napi::String::New(env, "newNumber"), nvp2obj(env, nvp)};
     });
 };
 
@@ -260,6 +263,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
     Device::GetClass(env, exports);
     Property::GetClass(env, exports);
     Number::GetClass(env, exports);
+    NumberValue::GetClass(env, exports);
 
     return exports;
 }

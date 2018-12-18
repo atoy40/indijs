@@ -29,6 +29,7 @@ const app = async () => {
       })
       .on("newNumber", function(value) {
         console.log("New number");
+        console.log(value.name);
         console.log(value);
       })
       .on("newSwitch", function(value) {

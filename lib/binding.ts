@@ -60,12 +60,34 @@ interface IIndiNative {
 class Indi {
   constructor(hostname = "localhost", port = 7624) {
     this._addonInstance = new addon.Indi(hostname, port);
+    this._ievents = new EventEmitter();
     this._events = new EventEmitter();
+
+    this._ievents.on('newDevice', (value: any) => {
+     //console.log(value);
+      /*this._events.emit("newProperty", {
+        name: value.getName(),
+      });*/
+    });
+
+    this._ievents.on('newProperty', (value: any) => {
+      //console.log(value);
+      /*this._events.emit("newProperty", {
+        name: value.getName(),
+      });*/
+    });
+
+    this._ievents.on('newNumber', (value: any) => {
+      console.log(value);
+      /*this._events.emit("newProperty", {
+        name: value.getName(),
+      });*/
+    });
   }
 
   async connect() {
     //this._addonInstance.connect(this._events.emit.bind(this._events));
-    await this._addonInstance.connect(this._events.emit.bind(this._events));
+    await this._addonInstance.connect(this._ievents.emit.bind(this._ievents));
     return this._events as IEventEmitter;
   }
 
@@ -79,6 +101,7 @@ class Indi {
 
   // private members
   private _addonInstance: IIndiNative;
+  private _ievents: any;
   private _events: any;
 }
 

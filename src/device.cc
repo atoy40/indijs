@@ -33,11 +33,27 @@ Napi::Value Device::GetDeviceName(const Napi::CallbackInfo &info)
     return Napi::String::New(env, _device->getDeviceName());
 }
 
+Napi::Value Device::ToObject(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+
+    Napi::Object propNames = Napi::Object::New(env);
+
+    propNames.Set("name", _device->getDeviceName());
+
+    return propNames;
+}
+
 void Device::GetClass(Napi::Env env, Napi::Object exports)
 {
     Napi::HandleScope scope(env);
 
+    Napi::Function symbolFor = Napi::Env(env).Global().Get("Symbol").As<Napi::Object>().Get("for").As<Napi::Function>();
+    Napi::Symbol inspectSymbol = symbolFor.Call({Napi::String::New(env, "nodejs.util.inspect.custom")}).As<Napi::Symbol>();
+
     Napi::Function func = DefineClass(env, "Device", {
+                                                         InstanceMethod("toJSON", &Device::ToObject),
+                                                         InstanceMethod(inspectSymbol, &Device::ToObject),
                                                          Device::InstanceMethod("getDeviceName", &Device::GetDeviceName),
                                                      });
 

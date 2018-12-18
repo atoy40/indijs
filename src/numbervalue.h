@@ -1,21 +1,24 @@
 #pragma once
 
-#include <iostream>
+#include "basevalue.h"
+
 #include <napi.h>
 #include <libindi/baseclient.h>
 #include <libindi/basedevice.h>
 
-class Device : public Napi::ObjectWrap<Device>
+class NumberValue : public BaseValue<NumberValue, INumber>
 {
   public:
-    Device(const Napi::CallbackInfo &);
-    Napi::Value GetDeviceName(const Napi::CallbackInfo &);
-    Napi::Value ToObject(const Napi::CallbackInfo &info);
+    NumberValue(const Napi::CallbackInfo &);
 
     static void GetClass(Napi::Env, Napi::Object);
     static Napi::Object NewInstance(Napi::Value);
 
+    Napi::Value getValue(const Napi::Env &env) {
+      return Napi::Number::New(env, getHandle()->value);
+    }
+
   private:
     static Napi::FunctionReference constructor;
-    INDI::BaseDevice *_device;
+    INumber *_number;
 };

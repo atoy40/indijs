@@ -2,7 +2,7 @@
   'targets': [
     {
       'target_name': 'indi-native',
-      'sources': [ 'src/indi.cc', 'src/device.cc', 'src/property.cc', 'src/number.cc' ],
+      'sources': [ 'src/indi.cc', 'src/device.cc', 'src/property.cc', 'src/number.cc', 'src/numbervalue.cc' ],
       'include_dirs': ["<!@(node -p \"require('node-addon-api').include\")", "<!@(node -p \"require('napi-thread-safe-callback').include\")"],
       'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
       'cflags!': [ '-fno-exceptions' ],
