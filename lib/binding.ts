@@ -26,6 +26,7 @@ interface IProperty {
 interface BaseVector {
   name: string;
   label: string;
+  group: string;
 }
 
 interface NumberVector extends BaseVector {
@@ -49,7 +50,8 @@ interface IEventEmitter {
 interface IIndiNative {
   connect(callback: Function): Promise<void>;
   disconnect(): void;
-  sendNewSwitch(props: any): void;
+  sendNewNumber(props: Object, cb: Function): Promise<void>;
+  sendNewSwitch(props: Object, cb: Function): Promise<void>;
 }
 
 class Indi {
@@ -68,8 +70,12 @@ class Indi {
     this._addonInstance.disconnect();
   }
 
-  sendNewSwitch(props: any) {
-    this._addonInstance.sendNewSwitch(props);
+  sendNewNumber(props: Object) {
+    return this._addonInstance.sendNewNumber(props, () => {});
+  }
+
+  sendNewSwitch(props: Object) {
+    return this._addonInstance.sendNewSwitch(props, () => {});
   }
 
   // private members

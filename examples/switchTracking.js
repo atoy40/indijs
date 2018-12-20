@@ -13,24 +13,20 @@ const app = async () => {
       .on("disconnected", function(code) {
         console.log("INDI disconnected : " + code);
       })
-      .on("newProperty", function(property) {
+      .on("newProperty", async function(property) {
         if (property.getName() === "TELESCOPE_TRACK_STATE") {
           const ttrack = property.getValue();
-          setInterval(() => {
-            if (ttrack) {
-              console.log("Set tracking to: " + !ttrack.values.TRACK_ON.value);
-              ttrack.values.TRACK_ON.value = !ttrack.values.TRACK_ON.value;
-              ttrack.values.TRACK_OFF.value = !ttrack.values.TRACK_OFF.value;
-              indi.sendNewSwitch(ttrack);
-            }
-          }, 5000);
+
+          console.log("Set tracking to: " + !ttrack.values.TRACK_ON.value);
+          ttrack.values.TRACK_ON.value = !ttrack.values.TRACK_ON.value;
+          ttrack.values.TRACK_OFF.value = !ttrack.values.TRACK_OFF.value;
+          await indi.sendNewSwitch(ttrack);
+          indi.disconnect();
         }
       });
   } catch (e) {
     return console.log(e.message);
   }
-
-  
 };
 
 app();
