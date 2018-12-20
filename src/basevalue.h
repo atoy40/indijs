@@ -19,6 +19,7 @@ public:
   void SetValue(const Napi::CallbackInfo &info, const Napi::Value &value);
 
   virtual Napi::Value getValue(const Napi::Env &env) = 0;
+  virtual void setProps(Napi::Object &object) = 0;
 
 protected:
   V* getHandle() {
@@ -55,6 +56,8 @@ Napi::Value BaseValue<T, V>::ToObject(const Napi::CallbackInfo &info)
   propNames.Set("name", _value->name);
   propNames.Set("label", _value->label);
   propNames.Set("value", getValue(env));
+
+  setProps(propNames);
 
   return propNames;
 }

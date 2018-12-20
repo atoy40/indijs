@@ -2,6 +2,7 @@
 #include "property.h"
 #include "number.h"
 #include "numbervalue.h"
+#include "vector.h"
 
 Indi::Indi(const Napi::CallbackInfo &info) : ObjectWrap(info)
 {
@@ -143,48 +144,10 @@ void Indi::removeDevice(INDI::BaseDevice *dp)
     });
 }
 
-Napi::Object Indi::prop2obj(Napi::Env env, INDI::Property *property)
-{
-    Napi::Object obj = Napi::Object::New(env);
-
-    obj.Set("name", property->getName());
-    obj.Set("type", Napi::Number::New(env, property->getType()));
-    obj.Set("label", property->getLabel());
-    obj.Set("groupName", property->getGroupName());
-    obj.Set("deviceName", property->getDeviceName());
-
-    return obj;
-}
-
-Napi::Object Indi::nvp2obj(Napi::Env env, INumberVectorProperty *nvp)
-{
-    Napi::Object obj = Napi::Object::New(env);
-
-    obj.Set("dimension", nvp->nnp);
-    obj.Set("name", nvp->name);
-    obj.Set("label", nvp->label);
-
-    Napi::Object values = Napi::Object::New(env);
-    for (int i = 0; i < nvp->nnp; i++)
-    {
-        Napi::Object v = Napi::Object::New(env);
-        v.Set("label", nvp->np[i].label);
-        v.Set("value", nvp->np[i].value);
-        v.Set("min", nvp->np[i].min);
-        v.Set("max", nvp->np[i].max);
-        v.Set("step", nvp->np[i].step);
-        values.Set(nvp->np[i].name, v);
-    }
-    obj.Set("values", values);
-
-    return obj;
-}
-
 void Indi::newProperty(INDI::Property *property)
 {
-    _callback->call([this, property](Napi::Env env, std::vector<napi_value> &args) {
+    _callback->call([property](Napi::Env env, std::vector<napi_value> &args) {
         args = {Napi::String::New(env, "newProperty"), Property::NewInstance(Napi::External<INDI::Property>::New(env, property))};
-        //args = {Napi::String::New(env, "newProperty"), prop2obj(env, property)};
     });
 };
 
@@ -203,34 +166,17 @@ void Indi::removeProperty(INDI::Property *property)
 
 void Indi::newNumber(INumberVectorProperty *nvp)
 {
-    _callback->call([this, nvp](Napi::Env env, std::vector<napi_value> &args) {
+    _callback->call([nvp](Napi::Env env, std::vector<napi_value> &args) {
         args = {Napi::String::New(env, "newNumber"), Number::NewInstance(Napi::External<INumberVectorProperty>::New(env, nvp))};
-        //args = {Napi::String::New(env, "newNumber"), nvp2obj(env, nvp)};
     });
 };
 
 void Indi::newSwitch(ISwitchVectorProperty *svp)
 {
     _callback->call([svp](Napi::Env env, std::vector<napi_value> &args) {
-        //Napi::Object prop = Number::NewInstance(Napi::External<INumberVectorProperty>::New(env, nvp));
+        Napi::Object prop = SwitchVector::NewInstance(Napi::External<ISwitchVectorProperty>::New(env, svp));
 
-        Napi::Object pValue = Napi::Object::New(env);
-
-        pValue.Set("dimension", svp->nsp);
-        pValue.Set("name", svp->name);
-        pValue.Set("label", svp->label);
-
-        Napi::Object values = Napi::Object::New(env);
-        for (int i = 0; i < svp->nsp; i++)
-        {
-            Napi::Object v = Napi::Object::New(env);
-            v.Set("value", Napi::Boolean::New(env, svp->sp[i].s));
-            v.Set("label", svp->sp[i].label);
-            values.Set(svp->sp[i].name, v);
-        }
-        pValue.Set("values", values);
-
-        args = {Napi::String::New(env, "newSwitch"), pValue};
+        args = {Napi::String::New(env, "newSwitch"), prop};
     });
 };
 
@@ -264,6 +210,9 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
     Property::GetClass(env, exports);
     Number::GetClass(env, exports);
     NumberValue::GetClass(env, exports);
+    SwitchValue::GetClass(env, exports);
+
+    SwitchVector::GetClass(env, exports);
 
     return exports;
 }

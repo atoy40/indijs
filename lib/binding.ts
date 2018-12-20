@@ -78,6 +78,12 @@ class Indi {
     });
 
     this._ievents.on('newNumber', (value: any) => {
+      //console.log(value);
+      /*this._events.emit("newProperty", {
+        name: value.getName(),
+      });*/
+    });
+    this._ievents.on('newSwitch', (value: any) => {
       console.log(value);
       /*this._events.emit("newProperty", {
         name: value.getName(),
