@@ -73,6 +73,12 @@ Napi::Value Indi::SendNewSwitch(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
 
+    if (info.Length() == 1) {
+        SwitchVector *sv = Napi::ObjectWrap<SwitchVector>::Unwrap(info[0].As<Napi::Object>());
+        sendNewSwitch(sv->getHandle());
+        return info.Env().Undefined();
+    }
+
     if (info.Length() < 3)
     {
         Napi::TypeError::New(env, "Wrong number of arguments")
@@ -167,7 +173,8 @@ void Indi::removeProperty(INDI::Property *property)
 void Indi::newNumber(INumberVectorProperty *nvp)
 {
     _callback->call([nvp](Napi::Env env, std::vector<napi_value> &args) {
-        args = {Napi::String::New(env, "newNumber"), Number::NewInstance(Napi::External<INumberVectorProperty>::New(env, nvp))};
+        Napi::Object prop = NumberVector::NewInstance(Napi::External<INumberVectorProperty>::New(env, nvp));
+        args = {Napi::String::New(env, "newNumber"), prop};
     });
 };
 
@@ -175,7 +182,6 @@ void Indi::newSwitch(ISwitchVectorProperty *svp)
 {
     _callback->call([svp](Napi::Env env, std::vector<napi_value> &args) {
         Napi::Object prop = SwitchVector::NewInstance(Napi::External<ISwitchVectorProperty>::New(env, svp));
-
         args = {Napi::String::New(env, "newSwitch"), prop};
     });
 };
@@ -203,8 +209,7 @@ void Indi::ConnectWorker::OnError(const Napi::Error &e)
 
 Napi::Object Init(Napi::Env env, Napi::Object exports)
 {
-    Napi::String name = Napi::String::New(env, "Indi");
-    exports.Set(name, Indi::GetClass(env));
+    exports.Set("Indi", Indi::GetClass(env));
 
     Device::GetClass(env, exports);
     Property::GetClass(env, exports);
@@ -212,6 +217,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
     NumberValue::GetClass(env, exports);
     SwitchValue::GetClass(env, exports);
 
+    NumberVector::GetClass(env, exports);
     SwitchVector::GetClass(env, exports);
 
     return exports;

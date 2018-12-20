@@ -1,5 +1,7 @@
 const Indi = require("../dist/binding.js");
 
+let ttrack;
+
 const app = async () => {
   const indi = new Indi();
 
@@ -17,8 +19,9 @@ const app = async () => {
         console.log("New device : " + device.getDeviceName());
       })
       .on("newProperty", function(property) {
-        console.log("New property :");
-        console.log(property);
+        if (property.getName() === "TELESCOPE_TRACK_STATE") {
+          ttrack = property.getValue();
+        }
       })
       .on("removeDevice", function(device) {
         console.log("Remove device : " + device.getDeviceName());
@@ -28,9 +31,8 @@ const app = async () => {
         console.log(property);
       })
       .on("newNumber", function(value) {
-        console.log("New number");
-        console.log(value.name);
-        console.log(value);
+        //console.log("New number");
+        //console.log(value);
       })
       .on("newSwitch", function(value) {
         console.log("New switch");
@@ -40,16 +42,14 @@ const app = async () => {
     return console.log(e.message);
   }
 
-  //setTimeout(indi.disconnect.bind(indi), 5000);
-  let track = true;
-  /*setInterval(() => {
-    indi.sendNewSwitch(
-      "Telescope Simulator",
-      "USEJOYSTICK",
-      track ? "ENABLE" : "DISABLE"
-    );
-    track = !track;
-  }, 2000);*/
+  setInterval(() => {
+    if (ttrack) {
+      console.log(ttrack.values);
+      ttrack.values.TRACK_ON.value = ttrack.values.TRACK_OFF.value;
+      ttrack.values.TRACK_OFF.value = ttrack.values.TRACK_ON.value;
+      indi.sendNewSwitch(ttrack);
+    }
+  }, 5000);
 };
 
 app();

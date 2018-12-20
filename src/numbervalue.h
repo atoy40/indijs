@@ -18,6 +18,10 @@ class NumberValue : public BaseValue<NumberValue, INumber>
       return Napi::Number::New(env, getHandle()->value);
     }
 
+    void setValue(const Napi::Env &env, const Napi::Value &value) {
+      getHandle()->value = value.As<Napi::Number>().DoubleValue();
+    }
+
     void setProps(Napi::Object &object) {
       object.Set("min", getHandle()->min);
       object.Set("max", getHandle()->max);
@@ -39,6 +43,10 @@ class SwitchValue : public BaseValue<SwitchValue, ISwitch>
 
     Napi::Value getValue(const Napi::Env &env) {
       return Napi::Boolean::New(env, getHandle()->s);
+    }
+
+    void setValue(const Napi::Env &env, const Napi::Value &value) {
+      getHandle()->s = value.As<Napi::Boolean>() ? ISS_ON : ISS_OFF;
     }
 
     void setProps(Napi::Object &object) {

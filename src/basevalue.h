@@ -19,6 +19,7 @@ public:
   void SetValue(const Napi::CallbackInfo &info, const Napi::Value &value);
 
   virtual Napi::Value getValue(const Napi::Env &env) = 0;
+  virtual void setValue(const Napi::Env &env, const Napi::Value &value) = 0;
   virtual void setProps(Napi::Object &object) = 0;
 
 protected:
@@ -93,4 +94,5 @@ Napi::Value BaseValue<T, V>::GetValue(const Napi::CallbackInfo &info)
 template <typename T, typename V>
 void BaseValue<T, V>::SetValue(const Napi::CallbackInfo &info, const Napi::Value &value)
 {
+  setValue(info.Env(), value);
 }
