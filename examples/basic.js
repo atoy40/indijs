@@ -19,16 +19,18 @@ const app = async () => {
         console.log("New device : " + device.getDeviceName());
       })
       .on("newProperty", function(property) {
-        if (property.getName() === "TELESCOPE_TRACK_STATE") {
-          ttrack = property.getValue();
+
+        //console.log("new props : " + property.name);
+        if (property.name === "TELESCOPE_TRACK_STATE") {
+          console.log(property.getValue());
         }
       })
       .on("removeDevice", function(device) {
-        console.log("Remove device : " + device.getDeviceName());
+        //console.log("Remove device : " + device.getName());
       })
       .on("removeProperty", function(property) {
-        console.log("Remove property :");
-        console.log(property);
+        //console.log("Remove property :");
+        //console.log(property);
       })
       .on("newNumber", function(value) {
         //console.log("New number");
@@ -41,15 +43,6 @@ const app = async () => {
   } catch (e) {
     return console.log(e.message);
   }
-
-  setInterval(() => {
-    if (ttrack) {
-      console.log(ttrack.values);
-      ttrack.values.TRACK_ON.value = ttrack.values.TRACK_OFF.value;
-      ttrack.values.TRACK_OFF.value = ttrack.values.TRACK_ON.value;
-      indi.sendNewSwitch(ttrack);
-    }
-  }, 5000);
 };
 
 app();

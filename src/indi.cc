@@ -161,6 +161,7 @@ Napi::Function Indi::GetClass(Napi::Env env) {
                        });
 }
 
+// INDI mediator implementation
 void Indi::serverConnected() {
     _callback->call([](Napi::Env env, std::vector<napi_value>& args) {
         args = {Napi::String::New(env, "connected")};

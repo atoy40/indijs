@@ -20,7 +20,10 @@ const app = async () => {
           console.log("Set tracking to: " + !ttrack.values.TRACK_ON.value);
           ttrack.values.TRACK_ON.value = !ttrack.values.TRACK_ON.value;
           ttrack.values.TRACK_OFF.value = !ttrack.values.TRACK_OFF.value;
+
+          // send new track value
           await indi.sendNewSwitch(ttrack);
+
           indi.disconnect();
         }
       });
