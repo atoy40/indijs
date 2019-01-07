@@ -14,6 +14,8 @@ class Indi : public Napi::ObjectWrap<Indi>, public INDI::BaseClient {
 
     Napi::Value Connect(const Napi::CallbackInfo&);
     Napi::Value Disconnect(const Napi::CallbackInfo&);
+    Napi::Value WatchDevice(const Napi::CallbackInfo&);
+    Napi::Value GetDevice(const Napi::CallbackInfo&);
     Napi::Value SendNewSwitch(const Napi::CallbackInfo&);
     Napi::Value SendNewNumber(const Napi::CallbackInfo&);
 
@@ -69,7 +71,7 @@ class SendNewValueWorker : public Napi::AsyncWorker {
                        V* vector)
         : Napi::AsyncWorker(callback), _deferred(deferred), _client(client), _vector(vector){};
 
-    //virtual void Execute() = 0;
+    // virtual void Execute() = 0;
     void OnOK() {
         Napi::HandleScope scope(Env());
         _deferred.Resolve(Env().Undefined());

@@ -58,6 +58,46 @@ Napi::Value Indi::Disconnect(const Napi::CallbackInfo& info) {
     return info.Env().Undefined();
 }
 
+Napi::Value Indi::WatchDevice(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    if(info.Length() < 1) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    if(!info[0].IsString()) {
+        Napi::TypeError::New(env, "You need to provide a device name").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    watchDevice(info[0].As<Napi::String>().Utf8Value().c_str());
+
+    return info.Env().Undefined();
+}
+
+Napi::Value Indi::GetDevice(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    if(info.Length() < 1) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    if(!info[0].IsString()) {
+        Napi::TypeError::New(env, "You need to provide a device name").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    INDI::BaseDevice *dp = getDevice(info[0].As<Napi::String>().Utf8Value().c_str());
+
+    if (dp) {
+        return Device::NewInstance(Napi::External<INDI::BaseDevice>::New(env, dp));
+    }
+
+    return info.Env().Undefined();
+}
+
 Napi::Value Indi::SendNewNumber(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
@@ -157,7 +197,10 @@ Napi::Function Indi::GetClass(Napi::Env env) {
                        {
                            Indi::InstanceMethod("connect", &Indi::Connect),
                            Indi::InstanceMethod("disconnect", &Indi::Disconnect),
+                           Indi::InstanceMethod("watchDevice", &Indi::WatchDevice),
+                           Indi::InstanceMethod("getDevice", &Indi::WatchDevice),
                            Indi::InstanceMethod("sendNewSwitch", &Indi::SendNewSwitch),
+                           Indi::InstanceMethod("sendNewNumber", &Indi::SendNewSwitch),
                        });
 }
 
