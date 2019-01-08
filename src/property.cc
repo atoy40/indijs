@@ -22,9 +22,9 @@ Napi::Value Property::GetName(const Napi::CallbackInfo& info) {
     return Napi::String::New(env, _property->getName());
 }
 
-void Property::SetName(const Napi::CallbackInfo& info, const Napi::Value &value) {
-  Napi::Env env = info.Env();
-  Napi::TypeError::New(env, "Unable to set property name").ThrowAsJavaScriptException();
+void Property::SetName(const Napi::CallbackInfo& info, const Napi::Value& value) {
+    Napi::Env env = info.Env();
+    Napi::TypeError::New(env, "Unable to set property name").ThrowAsJavaScriptException();
 }
 
 Napi::Value Property::GetType(const Napi::CallbackInfo& info) {
@@ -97,6 +97,12 @@ Napi::Value Property::GetValue(const Napi::CallbackInfo& info) {
         case INDI_NUMBER:
             return NumberVector::NewInstance(
                 Napi::External<INumberVectorProperty>::New(env, _property->getNumber()));
+        case INDI_TEXT:
+            return NumberVector::NewInstance(
+                Napi::External<ITextVectorProperty>::New(env, _property->getText()));
+        case INDI_LIGHT:
+            return NumberVector::NewInstance(
+                Napi::External<ILightVectorProperty>::New(env, _property->getLight()));
         default:
             return env.Undefined();
     }

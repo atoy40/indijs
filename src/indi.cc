@@ -1,6 +1,6 @@
 #include "indi.h"
-#include "number.h"
-#include "numbervalue.h"
+//#include "number.h"
+//#include "numbervalue.h"
 #include "property.h"
 #include "vector.h"
 
@@ -89,9 +89,9 @@ Napi::Value Indi::GetDevice(const Napi::CallbackInfo& info) {
         return env.Null();
     }
 
-    INDI::BaseDevice *dp = getDevice(info[0].As<Napi::String>().Utf8Value().c_str());
+    INDI::BaseDevice* dp = getDevice(info[0].As<Napi::String>().Utf8Value().c_str());
 
-    if (dp) {
+    if(dp) {
         return Device::NewInstance(Napi::External<INDI::BaseDevice>::New(env, dp));
     }
 
@@ -224,9 +224,10 @@ void Indi::newDevice(INDI::BaseDevice* dp) {
 }
 
 void Indi::removeDevice(INDI::BaseDevice* dp) {
-    _callback->call([dp](Napi::Env env, std::vector<napi_value>& args) {
-        Napi::Object dev = Device::NewInstance(Napi::External<INDI::BaseDevice>::New(env, dp));
-        args = {Napi::String::New(env, "removeDevice"), dev};
+    std::string name(dp->getDeviceName());
+
+    _callback->call([name](Napi::Env env, std::vector<napi_value>& args) {
+        args = {Napi::String::New(env, "removeDevice"), Napi::String::New(env, name)};
     });
 }
 
@@ -242,10 +243,8 @@ void Indi::removeProperty(INDI::Property* property) {
     std::string devname(property->getDeviceName());
 
     _callback->call([name, devname](Napi::Env env, std::vector<napi_value>& args) {
-        Napi::Object obj = Napi::Object::New(env);
-        obj.Set("name", name);
-        obj.Set("deviceName", devname);
-        args = {Napi::String::New(env, "removeProperty"), obj};
+        args = {Napi::String::New(env, "removeProperty"), Napi::String::New(env, name),
+                Napi::String::New(env, devname)};
     });
 };
 
@@ -262,6 +261,22 @@ void Indi::newSwitch(ISwitchVectorProperty* svp) {
         Napi::Object prop =
             SwitchVector::NewInstance(Napi::External<ISwitchVectorProperty>::New(env, svp));
         args = {Napi::String::New(env, "newSwitch"), prop};
+    });
+};
+
+void Indi::newText(ITextVectorProperty* tvp) {
+    _callback->call([tvp](Napi::Env env, std::vector<napi_value>& args) {
+        Napi::Object prop =
+            TextVector::NewInstance(Napi::External<ITextVectorProperty>::New(env, tvp));
+        args = {Napi::String::New(env, "newText"), prop};
+    });
+};
+
+void Indi::newLight(ILightVectorProperty* lvp) {
+    _callback->call([lvp](Napi::Env env, std::vector<napi_value>& args) {
+        Napi::Object prop =
+            TextVector::NewInstance(Napi::External<ILightVectorProperty>::New(env, lvp));
+        args = {Napi::String::New(env, "newLight"), prop};
     });
 };
 
@@ -287,12 +302,16 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 
     Device::GetClass(env, exports);
     Property::GetClass(env, exports);
-    Number::GetClass(env, exports);
+
     NumberValue::GetClass(env, exports);
     SwitchValue::GetClass(env, exports);
+    TextValue::GetClass(env, exports);
+    LightValue::GetClass(env, exports);
 
     NumberVector::GetClass(env, exports);
     SwitchVector::GetClass(env, exports);
+    TextVector::GetClass(env, exports);
+    LightVector::GetClass(env, exports);
 
     return exports;
 }

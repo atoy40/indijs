@@ -33,19 +33,15 @@ class Indi : public Napi::ObjectWrap<Indi>, public INDI::BaseClient {
     void newProperty(INDI::Property* property);
     void newSwitch(ISwitchVectorProperty* svp);
     void newNumber(INumberVectorProperty* nvp);
+    void newText(ITextVectorProperty* tvp);
+    void newLight(ILightVectorProperty* lvp);
     void serverConnected();
     void serverDisconnected(int exit_code);
     void removeDevice(INDI::BaseDevice* dp);
     void removeProperty(INDI::Property* property);
 
     void newBLOB(IBLOB* bp){};
-    void newText(ITextVectorProperty* tvp){};
-    void newLight(ILightVectorProperty* lvp){};
     void newMessage(INDI::BaseDevice* dp, int messageID){};
-
-    // helper
-    Napi::Object prop2obj(Napi::Env env, INDI::Property* property);
-    Napi::Object nvp2obj(Napi::Env env, INumberVectorProperty* nvp);
 
     std::shared_ptr<ThreadSafeCallback> _callback;
 };

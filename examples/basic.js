@@ -1,45 +1,32 @@
 const Indi = require("../dist/binding.js");
 
-let ttrack;
-
 const app = async () => {
   const indi = new Indi();
 
   try {
     const events = await indi.connect();
 
-    events
-      .on("connected", function() {
-        console.log("INDI Connected");
-      })
-      .on("disconnected", function(code) {
-        console.log("INDI disconnected : " + code);
-      })
-      .on("newDevice", function(device) {
-        console.log("New device : " + device.getDeviceName());
-      })
-      .on("newProperty", function(property) {
+    function displayValues(value, prefix) {
+      const values = value.values.map(v => `${v.name}:${v.value}`);
+      console.log(`${prefix||""}${value.device}/${value.group}/${value.label || value.name}" => [ ${values.join(", ")} ]`);
+    }
 
-        //console.log("new props : " + property.name);
-        if (property.name === "TELESCOPE_TRACK_STATE") {
-          console.log(property.getValue());
+    events
+      .on("connected", _ => console.log("[connected]"))
+      .on("disconnected", code => console.log(`[disconnected] code ${code}`))
+      .on("newDevice", device => console.log(`[new] device "${device.getDeviceName()}"`))
+      .on("removeDevice", name => console.log(`[del] device "${name}"`))
+      .on("newProperty", function(property) {
+        const value = property.getValue();
+        if (value) {
+          displayValues(value, "[new] ");
         }
       })
-      .on("removeDevice", function(device) {
-        //console.log("Remove device : " + device.getName());
-      })
-      .on("removeProperty", function(property) {
-        //console.log("Remove property :");
-        //console.log(property);
-      })
-      .on("newNumber", function(value) {
-        //console.log("New number");
-        //console.log(value);
-      })
-      .on("newSwitch", function(value) {
-        console.log("New switch");
-        console.log(value);
-      });
+      .on("removeProperty", (name, deviceName) => console.log(`[del] "${name}" on "${deviceName}"`))
+      .on("newNumber", v => displayValues(v, "[num] "))
+      .on("newSwitch", v => displayValues(v, "[swt] "))
+      .on("newText", v => displayValues(v, "[txt] "))
+      .on("newLight", v => displayValues(v, "[lgt] "));
   } catch (e) {
     return console.log(e.message);
   }

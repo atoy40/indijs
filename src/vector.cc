@@ -140,7 +140,6 @@ SwitchVector::SwitchVector(const Napi::CallbackInfo& info) : BaseVector(info) {
         Napi::Object value =
             SwitchValue::NewInstance(Napi::External<ISwitch>::New(info.Env(), getHandle()->sp + i));
         getValues().Set(i, value);
-				getValues().Set(getHandle()->sp[i].name, value);
     }
 }
 
@@ -153,6 +152,60 @@ void SwitchVector::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
 
     Napi::Function func = BaseVector::GetClass(env, exports, "SwitchVector");
+
+    constructor = Napi::Persistent(func);
+    constructor.SuppressDestruct();
+}
+
+// Text vector
+
+Napi::FunctionReference TextVector::constructor;
+
+TextVector::TextVector(const Napi::CallbackInfo& info) : BaseVector(info) {
+    for(int i = 0; i < getHandle()->ntp; i++) {
+        Napi::Object value =
+            TextValue::NewInstance(Napi::External<IText>::New(info.Env(), getHandle()->tp + i));
+        getValues().Set(i, value);
+				getValues().Set(getHandle()->tp[i].name, value);
+    }
+}
+
+Napi::Object TextVector::NewInstance(Napi::Value arg) {
+    Napi::Object obj = constructor.New({arg});
+    return obj;
+}
+
+void TextVector::GetClass(Napi::Env env, Napi::Object exports) {
+    Napi::HandleScope scope(env);
+
+    Napi::Function func = BaseVector::GetClass(env, exports, "TextVector");
+
+    constructor = Napi::Persistent(func);
+    constructor.SuppressDestruct();
+}
+
+// light vector
+
+Napi::FunctionReference LightVector::constructor;
+
+LightVector::LightVector(const Napi::CallbackInfo& info) : BaseVector(info) {
+    for(int i = 0; i < getHandle()->nlp; i++) {
+        Napi::Object value =
+            TextValue::NewInstance(Napi::External<ILight>::New(info.Env(), getHandle()->lp + i));
+        getValues().Set(i, value);
+				getValues().Set(getHandle()->lp[i].name, value);
+    }
+}
+
+Napi::Object LightVector::NewInstance(Napi::Value arg) {
+    Napi::Object obj = constructor.New({arg});
+    return obj;
+}
+
+void LightVector::GetClass(Napi::Env env, Napi::Object exports) {
+    Napi::HandleScope scope(env);
+
+    Napi::Function func = BaseVector::GetClass(env, exports, "LightVector");
 
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "numbervalue.h"
+#include "value.h"
 #include <libindi/baseclient.h>
 #include <napi.h>
 
@@ -55,6 +55,28 @@ class NumberVector : public BaseVector<NumberVector, INumberVectorProperty> {
 class SwitchVector : public BaseVector<SwitchVector, ISwitchVectorProperty> {
   public:
     SwitchVector(const Napi::CallbackInfo& info);
+
+    static Napi::Object NewInstance(Napi::Value arg);
+    static void GetClass(Napi::Env env, Napi::Object exports);
+
+  private:
+    static Napi::FunctionReference constructor;
+};
+
+class TextVector : public BaseVector<TextVector, ITextVectorProperty> {
+  public:
+    TextVector(const Napi::CallbackInfo& info);
+
+    static Napi::Object NewInstance(Napi::Value arg);
+    static void GetClass(Napi::Env env, Napi::Object exports);
+
+  private:
+    static Napi::FunctionReference constructor;
+};
+
+class LightVector : public BaseVector<LightVector, ILightVectorProperty> {
+  public:
+    LightVector(const Napi::CallbackInfo& info);
 
     static Napi::Object NewInstance(Napi::Value arg);
     static void GetClass(Napi::Env env, Napi::Object exports);
