@@ -9,7 +9,6 @@ class Property : public Napi::ObjectWrap<Property>
   public:
     Property(const Napi::CallbackInfo &);
     Napi::Value GetName(const Napi::CallbackInfo &);
-    void SetName(const Napi::CallbackInfo &, const Napi::Value &);
     Napi::Value GetType(const Napi::CallbackInfo &);
     Napi::Value GetLabel(const Napi::CallbackInfo &);
     Napi::Value GetGroupName(const Napi::CallbackInfo &);

@@ -4,6 +4,8 @@
 
 using namespace Napi;
 
+Napi::FunctionReference Property::constructor;
+
 Property::Property(const Napi::CallbackInfo& info) : ObjectWrap(info) {
     Napi::Env env = info.Env();
 
@@ -15,16 +17,9 @@ Property::Property(const Napi::CallbackInfo& info) : ObjectWrap(info) {
     _property = info[0].As<Napi::External<INDI::Property>>().Data();
 }
 
-Napi::FunctionReference Property::constructor;
-
 Napi::Value Property::GetName(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     return Napi::String::New(env, _property->getName());
-}
-
-void Property::SetName(const Napi::CallbackInfo& info, const Napi::Value& value) {
-    Napi::Env env = info.Env();
-    Napi::TypeError::New(env, "Unable to set property name").ThrowAsJavaScriptException();
 }
 
 Napi::Value Property::GetType(const Napi::CallbackInfo& info) {
@@ -115,7 +110,7 @@ void Property::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::Function func =
         DefineClass(env, "Property",
                     {
-                        Property::InstanceAccessor("name", &Property::GetName, &Property::SetName),
+                        Property::InstanceMethod("getName", &Property::GetName),
                         Property::InstanceMethod("getType", &Property::GetType),
                         Property::InstanceMethod("getLabel", &Property::GetLabel),
                         Property::InstanceMethod("getGroupName", &Property::GetGroupName),

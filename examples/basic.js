@@ -7,8 +7,11 @@ const app = async () => {
     const events = await indi.connect();
 
     function displayValues(value, prefix) {
+      if (!value) {
+        return console.log("no value");
+      }
       const values = value.values.map(v => `${v.name}:${v.value}`);
-      console.log(`${prefix||""}${value.device}/${value.group}/${value.label || value.name}" => [ ${values.join(", ")} ]`);
+      console.log(`${prefix||""}"${value.device}/${value.group}/${value.label || value.name}" => [ ${values.join(", ")} ]`);
     }
 
     events
@@ -16,12 +19,7 @@ const app = async () => {
       .on("disconnected", code => console.log(`[disconnected] code ${code}`))
       .on("newDevice", device => console.log(`[new] device "${device.getDeviceName()}"`))
       .on("removeDevice", name => console.log(`[del] device "${name}"`))
-      .on("newProperty", function(property) {
-        const value = property.getValue();
-        if (value) {
-          displayValues(value, "[new] ");
-        }
-      })
+      .on("newProperty", property => displayValues(property.getValue(), "[new] "))
       .on("removeProperty", (name, deviceName) => console.log(`[del] "${name}" on "${deviceName}"`))
       .on("newNumber", v => displayValues(v, "[num] "))
       .on("newSwitch", v => displayValues(v, "[swt] "))

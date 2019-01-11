@@ -17,9 +17,9 @@ const app = async () => {
         if (property.getName() === "TELESCOPE_TRACK_STATE") {
           const ttrack = property.getValue();
 
-          console.log("Set tracking to: " + !ttrack.values.TRACK_ON.value);
-          ttrack.values.TRACK_ON.value = !ttrack.values.TRACK_ON.value;
-          ttrack.values.TRACK_OFF.value = !ttrack.values.TRACK_OFF.value;
+          console.log("Set tracking to: " + !ttrack.values[0].value);
+          ttrack.values[0].value = !ttrack.values[0].value;
+          ttrack.values[1].value = !ttrack.values[1].value;
 
           // send new track value
           await indi.sendNewSwitch(ttrack);
