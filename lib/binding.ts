@@ -104,7 +104,7 @@ interface IndiEventEmitter {
 }
 
 interface IndiClientNative {
-  connect(callback: Function): Promise<IndiEventEmitter>;
+  connect(): Promise<boolean>;
   disconnect(): void;
   connectDevice(name: string): Promise<void>;
   sendNewNumber(props: Object): Promise<void>;
@@ -116,16 +116,15 @@ interface IndiClientNative {
   ): Promise<void>;
 }
 
-export class Client {
+export class Client extends EventEmitter {
   constructor(hostname = "localhost", port = 7624) {
-    console.log(addon);
-    this._addonInstance = new addon.IndiClient(hostname, port);
-    this._events = new EventEmitter();
+    super();
+    this._addonInstance = new addon.IndiClient(hostname, port, this.emit.bind(this));
+    //this._events = new EventEmitter();
   }
 
-  async connect() {
-    await this._addonInstance.connect(this._events.emit.bind(this._events));
-    return this._events as IndiEventEmitter;
+  connect() {
+    return this._addonInstance.connect();
   }
 
   disconnect() {
@@ -162,5 +161,5 @@ export class Client {
 
   // private members
   private _addonInstance: IndiClientNative;
-  private _events: any;
+  //private _events: any;
 }

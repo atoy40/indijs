@@ -57,9 +57,11 @@ class IndiClient::ConnectWorker : public PromiseWorker {
     ConnectWorker(Napi::Env env, IndiClient* client) : PromiseWorker(env), _client(client){};
 
     void Execute();
+    Napi::Value GetResolve();
     Napi::Value GetReject(const Napi::Error& e);
 
   private:
+    bool _result;
     IndiClient* _client;
 };
 

@@ -7,21 +7,17 @@ Napi::Promise::Deferred PromiseWorker::Deferred() {
 }
 
 Napi::Value PromiseWorker::GetResolve() {
-    Napi::HandleScope scope(Env());
     return Env().Undefined();
 }
 
 Napi::Value PromiseWorker::GetReject(const Napi::Error& e) {
-    Napi::HandleScope scope(Env());
-    return Env().Undefined();
+    return Napi::String::New(Env(), e.Message());
 }
 
 void PromiseWorker::OnOK() {
-    Napi::HandleScope scope(Env());
     _deferred.Resolve(GetResolve());
 }
 
 void PromiseWorker::OnError(const Napi::Error& e) {
-    Napi::HandleScope scope(Env());
     _deferred.Reject(GetReject(e));
 }

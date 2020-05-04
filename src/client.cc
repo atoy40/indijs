@@ -14,7 +14,7 @@ Napi::FunctionReference IndiClient::constructor;
 IndiClient::IndiClient(const Napi::CallbackInfo& info) : ObjectWrap(info) {
     Napi::Env env = info.Env();
 
-    if (info.Length() != 2) {
+    if (info.Length() != 3) {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
         return;
     }
@@ -30,6 +30,18 @@ IndiClient::IndiClient(const Napi::CallbackInfo& info) : ObjectWrap(info) {
         return;
     }
 
+    if (!info[2].IsFunction()) {
+        Napi::TypeError::New(env, "You need to set the event emitter").ThrowAsJavaScriptException();
+        return;
+    }
+
+    _tsfn = Napi::ThreadSafeFunction::New(env,
+        info[2].As<Napi::Function>(), // JavaScript function called asynchronously
+        "Resource Name", // Name
+        0, // Unlimited queue
+        1 // Only one thread will use this initially
+    );
+
     setServer(
         info[0].As<Napi::String>().Utf8Value().c_str(), info[1].As<Napi::Number>().Uint32Value());
 }
@@ -37,23 +49,10 @@ IndiClient::IndiClient(const Napi::CallbackInfo& info) : ObjectWrap(info) {
 Napi::Value IndiClient::Connect(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if (info.Length() < 1) {
+    if (info.Length() > 0) {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
         return env.Null();
     }
-
-    if (!info[0].IsFunction()) {
-        Napi::TypeError::New(env, "You need to provide a callback").ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
-    // Create a ThreadSafeFunction
-    _tsfn = Napi::ThreadSafeFunction::New(env,
-        info[0].As<Napi::Function>(), // JavaScript function called asynchronously
-        "Resource Name", // Name
-        0, // Unlimited queue
-        1 // Only one thread will use this initially
-    );
 
     ConnectWorker* wk = new ConnectWorker(env, this);
     wk->Queue();
@@ -367,13 +366,17 @@ void IndiClient::newLight(ILightVectorProperty* lvp) {
 };
 
 void IndiClient::ConnectWorker::Execute() {
-    if (!_client->connectServer()) {
+    _result = _client->connectServer();
+    if (!_result) {
         SetError("Unable to connect");
     }
 }
 
+Napi::Value IndiClient::ConnectWorker::GetResolve() {
+    return Napi::Boolean::New(Env(), _result);
+}
+
 Napi::Value IndiClient::ConnectWorker::GetReject(const Napi::Error& e) {
-    Napi::HandleScope scope(Env());
     _client->reset();
     return PromiseWorker::GetReject(e);
 }
