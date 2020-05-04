@@ -6,7 +6,7 @@ template<typename T, typename V>
 BaseVector<T, V>::BaseVector(const Napi::CallbackInfo& info) : Napi::ObjectWrap<T>(info) {
     Napi::Env env = info.Env();
 
-    if(info.Length() != 1) {
+    if (info.Length() != 1) {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
         return;
     }
@@ -82,7 +82,23 @@ template<typename T, typename V>
 void BaseVector<T, V>::SetValues(const Napi::CallbackInfo& info, const Napi::Value& value) {}
 
 template<typename T, typename V>
+Napi::Value BaseVector<T, V>::GetTimestamp(const Napi::CallbackInfo& info) {
+    return Napi::String::New(info.Env(), _value->timestamp);
+}
+
+template<typename T, typename V>
+void BaseVector<T, V>::SetTimestamp(const Napi::CallbackInfo& info, const Napi::Value& value) {}
+
+template<typename T, typename V>
 Napi::Function BaseVector<T, V>::GetClass(Napi::Env env, Napi::Object exports, const char* name) {
+    std::vector<Napi::ClassPropertyDescriptor<T>> properties;
+    return GetClass(env, exports, name, properties);
+}
+
+template<typename T, typename V>
+Napi::Function
+    BaseVector<T, V>::GetClass(Napi::Env env, Napi::Object exports, const char* name,
+                               std::vector<Napi::ClassPropertyDescriptor<T>>& properties) {
     Napi::HandleScope scope(env);
 
     Napi::Function symbolFor =
@@ -90,15 +106,22 @@ Napi::Function BaseVector<T, V>::GetClass(Napi::Env env, Napi::Object exports, c
     Napi::Symbol inspectSymbol =
         symbolFor.Call({Napi::String::New(env, "nodejs.util.inspect.custom")}).As<Napi::Symbol>();
 
-    std::vector<Napi::ClassPropertyDescriptor<T>> properties = {
-        BaseVector::InstanceMethod("toJSON", &BaseVector::ToObject),
-        BaseVector::InstanceMethod(inspectSymbol, &BaseVector::ToObject),
-        BaseVector::InstanceAccessor("device", &BaseVector::GetDevice, &BaseVector::SetDevice),
-        BaseVector::InstanceAccessor("name", &BaseVector::GetName, &BaseVector::SetName),
-        BaseVector::InstanceAccessor("label", &BaseVector::GetLabel, &BaseVector::SetLabel),
-        BaseVector::InstanceAccessor("group", &BaseVector::GetGroup, &BaseVector::SetGroup),
-        BaseVector::InstanceAccessor("state", &BaseVector::GetState, &BaseVector::SetState),
-        BaseVector::InstanceAccessor("values", &BaseVector::GetValues, &BaseVector::SetValues)};
+    properties.push_back(BaseVector::InstanceMethod("toJSON", &BaseVector::ToObject));
+    properties.push_back(BaseVector::InstanceMethod(inspectSymbol, &BaseVector::ToObject));
+    properties.push_back(
+        BaseVector::InstanceAccessor("device", &BaseVector::GetDevice, &BaseVector::SetDevice));
+    properties.push_back(
+        BaseVector::InstanceAccessor("name", &BaseVector::GetName, &BaseVector::SetName));
+    properties.push_back(
+        BaseVector::InstanceAccessor("label", &BaseVector::GetLabel, &BaseVector::SetLabel));
+    properties.push_back(
+        BaseVector::InstanceAccessor("group", &BaseVector::GetGroup, &BaseVector::SetGroup));
+    properties.push_back(
+        BaseVector::InstanceAccessor("state", &BaseVector::GetState, &BaseVector::SetState));
+    properties.push_back(
+        BaseVector::InstanceAccessor("values", &BaseVector::GetValues, &BaseVector::SetValues));
+    properties.push_back(BaseVector::InstanceAccessor("timestamp", &BaseVector::GetTimestamp,
+                                                      &BaseVector::SetTimestamp));
 
     Napi::Function func = BaseVector::DefineClass(env, name, properties);
 
@@ -110,7 +133,7 @@ Napi::Function BaseVector<T, V>::GetClass(Napi::Env env, Napi::Object exports, c
 Napi::FunctionReference NumberVector::constructor;
 
 NumberVector::NumberVector(const Napi::CallbackInfo& info) : BaseVector(info) {
-    for(int i = 0; i < getHandle()->nnp; i++) {
+    for (int i = 0; i < getHandle()->nnp; i++) {
         Napi::Object value =
             NumberValue::NewInstance(Napi::External<INumber>::New(info.Env(), getHandle()->np + i));
         getValues().Set(i, value);
@@ -136,11 +159,15 @@ void NumberVector::GetClass(Napi::Env env, Napi::Object exports) {
 Napi::FunctionReference SwitchVector::constructor;
 
 SwitchVector::SwitchVector(const Napi::CallbackInfo& info) : BaseVector(info) {
-    for(int i = 0; i < getHandle()->nsp; i++) {
+    for (int i = 0; i < getHandle()->nsp; i++) {
         Napi::Object value =
             SwitchValue::NewInstance(Napi::External<ISwitch>::New(info.Env(), getHandle()->sp + i));
         getValues().Set(i, value);
     }
+}
+
+Napi::Value SwitchVector::GetRule(const Napi::CallbackInfo& info) {
+    return Napi::Number::New(info.Env(), getHandle()->r);
 }
 
 Napi::Object SwitchVector::NewInstance(Napi::Value arg) {
@@ -150,8 +177,10 @@ Napi::Object SwitchVector::NewInstance(Napi::Value arg) {
 
 void SwitchVector::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
+    std::vector<Napi::ClassPropertyDescriptor<SwitchVector>> properties = {
+        InstanceAccessor("rule", &SwitchVector::GetRule, nullptr)};
 
-    Napi::Function func = BaseVector::GetClass(env, exports, "SwitchVector");
+    Napi::Function func = BaseVector::GetClass(env, exports, "SwitchVector", properties);
 
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
@@ -162,11 +191,11 @@ void SwitchVector::GetClass(Napi::Env env, Napi::Object exports) {
 Napi::FunctionReference TextVector::constructor;
 
 TextVector::TextVector(const Napi::CallbackInfo& info) : BaseVector(info) {
-    for(int i = 0; i < getHandle()->ntp; i++) {
+    for (int i = 0; i < getHandle()->ntp; i++) {
         Napi::Object value =
             TextValue::NewInstance(Napi::External<IText>::New(info.Env(), getHandle()->tp + i));
         getValues().Set(i, value);
-				getValues().Set(getHandle()->tp[i].name, value);
+        getValues().Set(getHandle()->tp[i].name, value);
     }
 }
 
@@ -189,11 +218,11 @@ void TextVector::GetClass(Napi::Env env, Napi::Object exports) {
 Napi::FunctionReference LightVector::constructor;
 
 LightVector::LightVector(const Napi::CallbackInfo& info) : BaseVector(info) {
-    for(int i = 0; i < getHandle()->nlp; i++) {
+    for (int i = 0; i < getHandle()->nlp; i++) {
         Napi::Object value =
-            TextValue::NewInstance(Napi::External<ILight>::New(info.Env(), getHandle()->lp + i));
+            LightValue::NewInstance(Napi::External<ILight>::New(info.Env(), getHandle()->lp + i));
         getValues().Set(i, value);
-				getValues().Set(getHandle()->lp[i].name, value);
+        getValues().Set(getHandle()->lp[i].name, value);
     }
 }
 

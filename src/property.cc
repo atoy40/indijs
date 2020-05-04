@@ -9,7 +9,7 @@ Napi::FunctionReference Property::constructor;
 Property::Property(const Napi::CallbackInfo& info) : ObjectWrap(info) {
     Napi::Env env = info.Env();
 
-    if(info.Length() != 1) {
+    if (info.Length() != 1) {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
         return;
     }
@@ -25,7 +25,7 @@ Napi::Value Property::GetName(const Napi::CallbackInfo& info) {
 Napi::Value Property::GetType(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if(info.Length() > 0) {
+    if (info.Length() > 0) {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
         return env.Null();
     }
@@ -36,7 +36,7 @@ Napi::Value Property::GetType(const Napi::CallbackInfo& info) {
 Napi::Value Property::GetLabel(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if(info.Length() > 0) {
+    if (info.Length() > 0) {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
         return env.Null();
     }
@@ -47,7 +47,7 @@ Napi::Value Property::GetLabel(const Napi::CallbackInfo& info) {
 Napi::Value Property::GetGroupName(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if(info.Length() > 0) {
+    if (info.Length() > 0) {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
         return env.Null();
     }
@@ -58,7 +58,7 @@ Napi::Value Property::GetGroupName(const Napi::CallbackInfo& info) {
 Napi::Value Property::GetDeviceName(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if(info.Length() > 0) {
+    if (info.Length() > 0) {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
         return env.Null();
     }
@@ -69,7 +69,7 @@ Napi::Value Property::GetDeviceName(const Napi::CallbackInfo& info) {
 Napi::Value Property::GetTimestamp(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if(info.Length() > 0) {
+    if (info.Length() > 0) {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
         return env.Null();
     }
@@ -80,12 +80,12 @@ Napi::Value Property::GetTimestamp(const Napi::CallbackInfo& info) {
 Napi::Value Property::GetValue(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if(info.Length() > 0) {
+    if (info.Length() > 0) {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
         return env.Null();
     }
 
-    switch(_property->getType()) {
+    switch (_property->getType()) {
         case INDI_SWITCH:
             return SwitchVector::NewInstance(
                 Napi::External<ISwitchVectorProperty>::New(env, _property->getSwitch()));
@@ -93,10 +93,10 @@ Napi::Value Property::GetValue(const Napi::CallbackInfo& info) {
             return NumberVector::NewInstance(
                 Napi::External<INumberVectorProperty>::New(env, _property->getNumber()));
         case INDI_TEXT:
-            return NumberVector::NewInstance(
+            return TextVector::NewInstance(
                 Napi::External<ITextVectorProperty>::New(env, _property->getText()));
         case INDI_LIGHT:
-            return NumberVector::NewInstance(
+            return LightVector::NewInstance(
                 Napi::External<ILightVectorProperty>::New(env, _property->getLight()));
         default:
             return env.Undefined();
@@ -107,17 +107,16 @@ Napi::Value Property::GetValue(const Napi::CallbackInfo& info) {
 void Property::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
 
-    Napi::Function func =
-        DefineClass(env, "Property",
-                    {
-                        Property::InstanceMethod("getName", &Property::GetName),
-                        Property::InstanceMethod("getType", &Property::GetType),
-                        Property::InstanceMethod("getLabel", &Property::GetLabel),
-                        Property::InstanceMethod("getGroupName", &Property::GetGroupName),
-                        Property::InstanceMethod("getDeviceName", &Property::GetDeviceName),
-                        Property::InstanceMethod("getTimestamp", &Property::GetTimestamp),
-                        Property::InstanceMethod("getValue", &Property::GetValue),
-                    });
+    Napi::Function func = DefineClass(env, "Property",
+        {
+            Property::InstanceMethod("getName", &Property::GetName),
+            Property::InstanceMethod("getType", &Property::GetType),
+            Property::InstanceMethod("getLabel", &Property::GetLabel),
+            Property::InstanceMethod("getGroupName", &Property::GetGroupName),
+            Property::InstanceMethod("getDeviceName", &Property::GetDeviceName),
+            Property::InstanceMethod("getTimestamp", &Property::GetTimestamp),
+            Property::InstanceMethod("getValue", &Property::GetValue),
+        });
 
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();

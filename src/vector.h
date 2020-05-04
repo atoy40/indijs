@@ -22,7 +22,11 @@ class BaseVector : public Napi::ObjectWrap<T> {
     void SetState(const Napi::CallbackInfo& info, const Napi::Value& value);
     Napi::Value GetValues(const Napi::CallbackInfo& info);
     void SetValues(const Napi::CallbackInfo& info, const Napi::Value& value);
+    Napi::Value GetTimestamp(const Napi::CallbackInfo& info);
+    void SetTimestamp(const Napi::CallbackInfo& info, const Napi::Value& value);
 
+    static Napi::Function GetClass(Napi::Env env, Napi::Object exports, const char* name,
+                                   std::vector<Napi::ClassPropertyDescriptor<T>>& properties);
     static Napi::Function GetClass(Napi::Env env, Napi::Object exports, const char* name);
 
     // virtual Napi::Value getValue(const Napi::Env &env) = 0;
@@ -58,6 +62,7 @@ class SwitchVector : public BaseVector<SwitchVector, ISwitchVectorProperty> {
 
     static Napi::Object NewInstance(Napi::Value arg);
     static void GetClass(Napi::Env env, Napi::Object exports);
+    Napi::Value GetRule(const Napi::CallbackInfo& info);
 
   private:
     static Napi::FunctionReference constructor;

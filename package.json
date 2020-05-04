@@ -1,12 +1,15 @@
 {
-    "main": "lib/binding.js",
+    "main": "dist/binding.js",
     "dependencies": {
-        "node-addon-api": "^1.1.0"
+        "colors": "^1.4.0",
+        "node-addon-api": "^1.7.1"
     },
     "scripts": {
         "pretest": "tsc",
         "test": "node --napi-modules ./test/test_binding.js",
-        "build": "tsc && node-gyp build"
+        "configure": "node-gyp configure",
+        "build": "tsc && node-gyp build",
+        "builddebug": "tsc && node-gyp build --debug"
     },
     "gypfile": true,
     "name": "indijs",
@@ -15,8 +18,7 @@
     "license": "ISC",
     "description": "",
     "devDependencies": {
-        "@types/node": "^7.0.22",
-        "napi-thread-safe-callback": "0.0.6",
+        "@types/node": "^7.10.10",
         "typescript": "^2.3.3"
     }
 }

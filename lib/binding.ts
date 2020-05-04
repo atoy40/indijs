@@ -1,87 +1,166 @@
 const addon = require("../build/Release/indi-native");
-const EventEmitter = require("events").EventEmitter;
+import { EventEmitter } from "events";
 
-enum PropertyType {
+export enum PropertyType {
   Number,
   Switch,
   Text,
   Light,
   Blob,
-  Unknown
+  Unknown,
 }
 
-interface IDevice {
+export enum IndiState {
+  Idle,
+  Ok,
+  Busy,
+  Alert,
+}
+
+export enum IndiRule {
+  OneOfMany,
+  AtMostOne,
+  NOfMany,
+}
+
+interface IndiDevice {
   getDeviceName(): string;
+  connected: boolean;
 }
 
-interface IProperty {
+interface IndiProperty<T extends IndiVector> {
   getName(): string;
   getType(): PropertyType;
   getLabel(): string;
   getGroupName(): string;
   getDeviceName(): string;
   getTimestamp(): string;
+  getValue(): T;
 }
 
-interface BaseVector {
+interface IndiVector {
   name: string;
   label: string;
   group: string;
+  state: IndiState;
 }
 
-interface NumberVector extends BaseVector {
-  values: { [name: string]: NumberElement };
+interface IndiNumberVector extends IndiVector {
+  values: Array<IndiNumber>;
 }
 
-interface NumberElement {
+interface IndiSwitchVector extends IndiVector {
+  rule: IndiRule;
+  values: Array<IndiSwitch>;
+}
+
+interface IndiTextVector extends IndiVector {
+  values: Array<IndiText>;
+}
+
+interface IndiLightVector extends IndiVector {
+  values: Array<IndiLight>;
+}
+
+interface IndiValue<T> {
   name: string;
   label: string;
-  value: number;
+  value: T;
+}
+
+interface IndiNumber extends IndiValue<number> {
   min: number;
   max: number;
   step: number;
 }
 
-interface IEventEmitter {
-  on(event: "device", listener: (device: IDevice) => void): this;
-  on(event: string, listener: Function): this;
+interface IndiSwitch extends IndiValue<boolean> {}
+
+interface IndiText extends IndiValue<string> {}
+
+interface IndiLight extends IndiValue<IndiState> {}
+
+interface IndiEventEmitter {
+  on(event: "connect", listener: () => void): this;
+  on(event: "disconnect", listener: (code: number) => void): this;
+  on(event: "newDevice", listener: (device: IndiDevice) => void): this;
+  on(event: "removeDevice", listener: (name: string) => void): this;
+  on(
+    event: "newProperty",
+    listener: (
+      property: IndiProperty<
+        IndiNumberVector | IndiSwitchVector | IndiTextVector | IndiLightVector
+      >
+    ) => void
+  ): this;
+  on(
+    event: "removeProperty",
+    listener: (name: string, device: string) => void
+  ): this;
+  on(event: "newNumber", listener: (number: IndiNumberVector) => void): this;
+  on(event: "newSwitch", listener: (number: IndiSwitchVector) => void): this;
+  on(event: "newText", listener: (number: IndiTextVector) => void): this;
+  on(event: "newLight", listener: (number: IndiLightVector) => void): this;
 }
 
-interface IIndiNative {
-  connect(callback: Function): Promise<void>;
+interface IndiClientNative {
+  connect(callback: Function): Promise<IndiEventEmitter>;
   disconnect(): void;
-  sendNewNumber(props: Object, cb: Function): Promise<void>;
-  sendNewSwitch(props: Object, cb: Function): Promise<void>;
+  connectDevice(name: string): Promise<void>;
+  sendNewNumber(props: Object): Promise<void>;
+  sendNewSwitch(props: Object): Promise<void>;
+  sendNewSwitch(
+    device: string,
+    property: string,
+    element: string
+  ): Promise<void>;
 }
 
-class Indi {
+export class Client {
   constructor(hostname = "localhost", port = 7624) {
-    this._addonInstance = new addon.Indi(hostname, port);
+    console.log(addon);
+    this._addonInstance = new addon.IndiClient(hostname, port);
     this._events = new EventEmitter();
   }
 
   async connect() {
-    //this._addonInstance.connect(this._events.emit.bind(this._events));
     await this._addonInstance.connect(this._events.emit.bind(this._events));
-    return this._events as IEventEmitter;
+    return this._events as IndiEventEmitter;
   }
 
   disconnect() {
     this._addonInstance.disconnect();
   }
 
-  sendNewNumber(props: Object) {
-    return this._addonInstance.sendNewNumber(props, () => {});
+  connectDevice(name: string) {
+    return this._addonInstance.connectDevice(name);
   }
 
-  sendNewSwitch(props: Object) {
-    return this._addonInstance.sendNewSwitch(props, () => {});
+  sendNewNumber(props: Object) {
+    return this._addonInstance.sendNewNumber(props);
+  }
+
+  sendNewSwitch(
+    propsOrDevice: IndiProperty<IndiSwitchVector> | string,
+    property?: string,
+    element?: string
+  ) {
+    if (
+      typeof propsOrDevice === "string" &&
+      typeof property === "string" &&
+      typeof element === "string"
+    ) {
+      return this._addonInstance.sendNewSwitch(
+        propsOrDevice,
+        property,
+        element
+      );
+    } else {
+      return this._addonInstance.sendNewSwitch(propsOrDevice);
+    }
   }
 
   // private members
-  private _addonInstance: IIndiNative;
-  private _ievents: any;
+  private _addonInstance: IndiClientNative;
   private _events: any;
 }
-
-export = Indi;
