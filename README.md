@@ -33,10 +33,10 @@ client
   .on("removeDevice", (devname) => { /* code */ })
   .on("newProperty", (property) => { /* code */ })
   .on("removeProperty", (propname, devname) => { /* code */ })
-  .on("newNumber", (number) => { /* code */ })
-  .on("newSwitch", (switch) => { /* code */ })
-  .on("newText", (text) => { /* code */ })
-  .on("newLight", (light) => { /* code */ })
+  .on("newNumber", (n) => { /* code */ })
+  .on("newSwitch", (s) => { /* code */ })
+  .on("newText", (t) => { /* code */ })
+  .on("newLight", (l) => { /* code */ })
 
 client.connect().then(() => {
   console.log("connected...");
