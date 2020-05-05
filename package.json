@@ -1,24 +1,27 @@
 {
-    "main": "dist/binding.js",
-    "dependencies": {
-        "colors": "^1.4.0",
-        "node-addon-api": "^1.7.1"
-    },
-    "scripts": {
-        "pretest": "tsc",
-        "test": "node --napi-modules ./test/test_binding.js",
-        "configure": "node-gyp configure",
-        "build": "tsc && node-gyp build",
-        "builddebug": "tsc && node-gyp build --debug"
-    },
-    "gypfile": true,
-    "name": "indijs",
-    "version": "1.0.0",
-    "author": "",
-    "license": "ISC",
-    "description": "",
-    "devDependencies": {
-        "@types/node": "^7.10.10",
-        "typescript": "^2.3.3"
-    }
+  "main": "dist/binding.js",
+  "bin": {
+    "indijs-cli": "./bin/indijs-cli.js"
+  },
+  "types": "dist/binding.d.ts",
+  "dependencies": {
+    "colors": "^1.4.0",
+    "node-addon-api": "^1.7.1"
+  },
+  "scripts": {
+    "pretest": "tsc",
+    "prepublish": "tsc",
+    "test": "node --napi-modules ./test/test_binding.js",
+    "build": "tsc && node-gyp build"
+  },
+  "gypfile": true,
+  "name": "@atoy40/indijs",
+  "version": "1.0.3",
+  "author": "Anthony Hinsinger <anthony.hinsinger@gmail.com>",
+  "license": "ISC",
+  "description": "INDI nodejs wrapper",
+  "devDependencies": {
+    "@types/node": "^7.10.10",
+    "typescript": "^2.3.3"
+  }
 }

@@ -119,8 +119,11 @@ interface IndiClientNative {
 export class Client extends EventEmitter {
   constructor(hostname = "localhost", port = 7624) {
     super();
-    this._addonInstance = new addon.IndiClient(hostname, port, this.emit.bind(this));
-    //this._events = new EventEmitter();
+    this._addonInstance = new addon.IndiClient(
+      hostname,
+      port,
+      this.emit.bind(this)
+    );
   }
 
   connect() {
@@ -161,5 +164,4 @@ export class Client extends EventEmitter {
 
   // private members
   private _addonInstance: IndiClientNative;
-  //private _events: any;
 }
