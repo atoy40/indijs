@@ -10,11 +10,24 @@ export enum PropertyType {
   Unknown,
 }
 
-export enum IndiState {
-  Idle,
-  Ok,
-  Busy,
-  Alert,
+export enum IndiDriverInterface {
+  General = 0,
+  Telescope = 1 << 0,
+  Ccd = 1 << 1,
+  Guider = 1 << 2,
+  Focuser = 1 << 3,
+  Filter = 1 << 4,
+  Dome = 1 << 5,
+  Gps = 1 << 6,
+  Weather = 1 << 7,
+  Ao = 1 << 8,
+  Dustcap = 1 << 9,
+  Lightbox = 1 << 10,
+  Detector = 1 << 11,
+  Rotator = 1 << 12,
+  Spectrograph = 1 << 13,
+  Correlator = 1 << 14,
+  Aux = 1 << 15,
 }
 
 export enum IndiRule {
@@ -23,8 +36,24 @@ export enum IndiRule {
   NOfMany,
 }
 
+export enum IndiState {
+  Idle,
+  Ok,
+  Busy,
+  Alert,
+}
+
+export enum IndiPerm {
+  ReadOnly,
+  WriteOnly,
+  ReadWrite,
+}
+
 interface IndiDevice {
   getDeviceName(): string;
+  getProperty(): IndiProperty<IndiVector>;
+  getProperties(): Array<IndiProperty<IndiVector>>;
+  getDriverInterface(): Number;
   connected: boolean;
 }
 
@@ -35,6 +64,7 @@ interface IndiProperty<T extends IndiVector> {
   getGroupName(): string;
   getDeviceName(): string;
   getTimestamp(): string;
+  getPermission(): IndiPerm;
   getValue(): T;
 }
 
@@ -42,7 +72,9 @@ interface IndiVector {
   name: string;
   label: string;
   group: string;
+  device: string;
   state: IndiState;
+  permission: IndiPerm;
 }
 
 interface IndiNumberVector extends IndiVector {
@@ -101,12 +133,19 @@ interface IndiEventEmitter {
   on(event: "newSwitch", listener: (number: IndiSwitchVector) => void): this;
   on(event: "newText", listener: (number: IndiTextVector) => void): this;
   on(event: "newLight", listener: (number: IndiLightVector) => void): this;
+  on(
+    event: "newMessage",
+    listener: (device: IndiDevice, id: number) => void
+  ): this;
 }
 
 interface IndiClientNative {
   connect(): Promise<boolean>;
-  disconnect(): void;
+  disconnect(): Promise<boolean>;
+  connected: boolean;
   connectDevice(name: string): Promise<void>;
+  getDevice(name: string): IndiDevice;
+  getDevices(): Array<IndiDevice>;
   sendNewNumber(props: Object): Promise<void>;
   sendNewSwitch(props: Object): Promise<void>;
   sendNewSwitch(
@@ -116,7 +155,7 @@ interface IndiClientNative {
   ): Promise<void>;
 }
 
-export class Client extends EventEmitter {
+export class Client extends EventEmitter implements IndiEventEmitter {
   constructor(hostname = "localhost", port = 7624) {
     super();
     this._addonInstance = new addon.IndiClient(
@@ -131,11 +170,23 @@ export class Client extends EventEmitter {
   }
 
   disconnect() {
-    this._addonInstance.disconnect();
+    return this._addonInstance.disconnect();
+  }
+
+  get connected(): boolean {
+    return this._addonInstance.connected;
   }
 
   connectDevice(name: string) {
     return this._addonInstance.connectDevice(name);
+  }
+
+  getDevice(name: string) {
+    return this._addonInstance.getDevice(name);
+  }
+
+  getDevices() {
+    return this._addonInstance.getDevices();
   }
 
   sendNewNumber(props: Object) {

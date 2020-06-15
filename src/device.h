@@ -9,6 +9,10 @@ class Device : public Napi::ObjectWrap<Device> {
     Device(const Napi::CallbackInfo&);
     Napi::Value GetDeviceName(const Napi::CallbackInfo&);
     Napi::Value IsConnected(const Napi::CallbackInfo&);
+    Napi::Value GetProperty(const Napi::CallbackInfo&);
+    Napi::Value GetProperties(const Napi::CallbackInfo&);
+    Napi::Value GetDriverInterface(const Napi::CallbackInfo&);
+    Napi::Value MessageQueue(const Napi::CallbackInfo&);
     Napi::Value ToObject(const Napi::CallbackInfo& info);
 
     static void GetClass(Napi::Env, Napi::Object);

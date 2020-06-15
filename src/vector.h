@@ -8,6 +8,7 @@ template<typename T, typename V>
 class BaseVector : public Napi::ObjectWrap<T> {
   public:
     BaseVector(const Napi::CallbackInfo&);
+    virtual ~BaseVector();
     Napi::Value ToObject(const Napi::CallbackInfo& info);
 
     Napi::Value GetDevice(const Napi::CallbackInfo& info);
@@ -24,6 +25,8 @@ class BaseVector : public Napi::ObjectWrap<T> {
     void SetValues(const Napi::CallbackInfo& info, const Napi::Value& value);
     Napi::Value GetTimestamp(const Napi::CallbackInfo& info);
     void SetTimestamp(const Napi::CallbackInfo& info, const Napi::Value& value);
+    Napi::Value GetPermission(const Napi::CallbackInfo& info);
+    void SetPermission(const Napi::CallbackInfo& info, const Napi::Value& value);
 
     static Napi::Function GetClass(Napi::Env env, Napi::Object exports, const char* name,
                                    std::vector<Napi::ClassPropertyDescriptor<T>>& properties);
@@ -32,17 +35,19 @@ class BaseVector : public Napi::ObjectWrap<T> {
     // virtual Napi::Value getValue(const Napi::Env &env) = 0;
     // virtual void setProps(Napi::Object &object) = 0;
 
+    virtual IPerm getPermission() = 0;
+
     V* getHandle() {
         return _value;
     }
 
-    Napi::Array getValues() {
-        return _valuesref.Value();
+    Napi::ObjectReference& getValues() {
+        return _valuesref;
     }
 
   private:
     V* _value;
-    Napi::Reference<Napi::Array> _valuesref;
+    Napi::ObjectReference _valuesref;
 };
 
 class NumberVector : public BaseVector<NumberVector, INumberVectorProperty> {
@@ -51,6 +56,7 @@ class NumberVector : public BaseVector<NumberVector, INumberVectorProperty> {
 
     static Napi::Object NewInstance(Napi::Value arg);
     static void GetClass(Napi::Env env, Napi::Object exports);
+    IPerm getPermission();
 
   private:
     static Napi::FunctionReference constructor;
@@ -63,6 +69,7 @@ class SwitchVector : public BaseVector<SwitchVector, ISwitchVectorProperty> {
     static Napi::Object NewInstance(Napi::Value arg);
     static void GetClass(Napi::Env env, Napi::Object exports);
     Napi::Value GetRule(const Napi::CallbackInfo& info);
+    IPerm getPermission();
 
   private:
     static Napi::FunctionReference constructor;
@@ -74,6 +81,7 @@ class TextVector : public BaseVector<TextVector, ITextVectorProperty> {
 
     static Napi::Object NewInstance(Napi::Value arg);
     static void GetClass(Napi::Env env, Napi::Object exports);
+    IPerm getPermission();
 
   private:
     static Napi::FunctionReference constructor;
@@ -85,6 +93,7 @@ class LightVector : public BaseVector<LightVector, ILightVectorProperty> {
 
     static Napi::Object NewInstance(Napi::Value arg);
     static void GetClass(Napi::Env env, Napi::Object exports);
+    IPerm getPermission();
 
   private:
     static Napi::FunctionReference constructor;

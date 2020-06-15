@@ -61,8 +61,28 @@ Napi::Value IndiClient::Connect(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value IndiClient::Disconnect(const Napi::CallbackInfo& info) {
-    disconnectServer();
-    return info.Env().Undefined();
+    Napi::Env env = info.Env();
+
+    if (info.Length() > 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    DisconnectWorker* wk = new DisconnectWorker(env, this);
+    wk->Queue();
+
+    return wk->Deferred().Promise();
+}
+
+Napi::Value IndiClient::IsConnected(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    if (info.Length() > 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    return Napi::Boolean::New(env, isServerConnected());
 }
 
 Napi::Value IndiClient::WatchDevice(const Napi::CallbackInfo& info) {
@@ -103,6 +123,29 @@ Napi::Value IndiClient::GetDevice(const Napi::CallbackInfo& info) {
     }
 
     return info.Env().Undefined();
+}
+
+Napi::Value IndiClient::GetDevices(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    if (info.Length() != 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    std::vector<INDI::BaseDevice*> devices = getDevices();
+
+    Napi::Array array = Napi::Array::New(env);
+
+    if (!isServerConnected()) {
+        return array;
+    }
+
+    for (unsigned int i = 0; i < devices.size(); i++) {
+        array.Set(i, Device::NewInstance(Napi::External<INDI::BaseDevice>::New(env, devices[i])));
+    }
+
+    return array;
 }
 
 Napi::Value IndiClient::ConnectDevice(const Napi::CallbackInfo& info) {
@@ -223,8 +266,10 @@ void IndiClient::GetClass(Napi::Env env, Napi::Object exports) {
         {
             InstanceMethod("connect", &IndiClient::Connect),
             InstanceMethod("disconnect", &IndiClient::Disconnect),
+            InstanceAccessor("connected", &IndiClient::IsConnected, nullptr),
             InstanceMethod("watchDevice", &IndiClient::WatchDevice),
-            InstanceMethod("getDevice", &IndiClient::WatchDevice),
+            InstanceMethod("getDevice", &IndiClient::GetDevice),
+            InstanceMethod("getDevices", &IndiClient::GetDevices),
             InstanceMethod("connectDevice", &IndiClient::ConnectDevice),
             InstanceMethod("sendNewSwitch", &IndiClient::SendNewSwitch),
             InstanceMethod("sendNewNumber", &IndiClient::SendNewSwitch),
@@ -264,7 +309,7 @@ void IndiClient::serverDisconnected(int exit_code) {
 
     _tsfn.BlockingCall(value, callback);
 
-    reset();
+    // reset();
 }
 
 void IndiClient::newDevice(INDI::BaseDevice* dp) {
@@ -365,6 +410,30 @@ void IndiClient::newLight(ILightVectorProperty* lvp) {
     _tsfn.BlockingCall(callback);
 };
 
+void IndiClient::newBLOB(IBLOB* bp) {
+    log("NEW BLOB");
+
+    auto callback = [bp](Napi::Env env, Napi::Function jsCallback) {
+        Napi::Buffer<char> buf = Napi::Buffer<char>::New(env, static_cast<char *>(bp->blob), bp->bloblen);
+        jsCallback.Call({Napi::String::New(env, "newBLOB"), buf});
+    };
+
+    _tsfn.BlockingCall(callback);
+}
+
+void IndiClient::newMessage(INDI::BaseDevice* dp, int messageID) {
+    log("NEW MSG");
+
+    auto callback = [dp, messageID](Napi::Env env, Napi::Function jsCallback) {
+        Napi::Object prop =
+            Device::NewInstance(Napi::External<INDI::BaseDevice>::New(env, dp));
+        jsCallback.Call(
+            {Napi::String::New(env, "newMessage"), prop, Napi::Number::New(env, messageID)});
+    };
+
+    _tsfn.BlockingCall(callback);
+}
+
 void IndiClient::ConnectWorker::Execute() {
     _result = _client->connectServer();
     if (!_result) {
@@ -377,6 +446,22 @@ Napi::Value IndiClient::ConnectWorker::GetResolve() {
 }
 
 Napi::Value IndiClient::ConnectWorker::GetReject(const Napi::Error& e) {
+    _client->reset();
+    return PromiseWorker::GetReject(e);
+}
+
+void IndiClient::DisconnectWorker::Execute() {
+    _result = _client->disconnectServer();
+    if (!_result) {
+        SetError("Unable to disconnect");
+    }
+}
+
+Napi::Value IndiClient::DisconnectWorker::GetResolve() {
+    return Napi::Boolean::New(Env(), _result);
+}
+
+Napi::Value IndiClient::DisconnectWorker::GetReject(const Napi::Error& e) {
     _client->reset();
     return PromiseWorker::GetReject(e);
 }

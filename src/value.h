@@ -43,6 +43,7 @@ class NumberValue : public BaseValue<NumberValue, INumber> {
     Napi::Value GetMin(const Napi::CallbackInfo& info);
     Napi::Value GetMax(const Napi::CallbackInfo& info);
     Napi::Value GetStep(const Napi::CallbackInfo& info);
+    Napi::Value GetFormated(const Napi::CallbackInfo& info);
 
     Napi::Value getValue(const Napi::Env& env) {
         return Napi::Number::New(env, getHandle()->value);

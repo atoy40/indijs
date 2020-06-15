@@ -1,5 +1,6 @@
 
 #include "value.h"
+#include <libindi/indicom.h>
 
 // base value
 
@@ -99,13 +100,20 @@ Napi::Value NumberValue::GetStep(const Napi::CallbackInfo& info) {
     return Napi::Number::New(info.Env(), getHandle()->step);
 }
 
+Napi::Value NumberValue::GetFormated(const Napi::CallbackInfo& info) {
+    char buf[MAXINDIFORMAT];
+    numberFormat(buf, getHandle()->format, getHandle()->value);
+    return Napi::String::New(info.Env(), buf);
+}
+
 void NumberValue::GetClass(Napi::Env env, Napi::Object exports) {
     // Napi::HandleScope scope(env);
 
     Napi::Function func = BaseValue::GetClass(env, exports, "NumberValue",
         {InstanceAccessor("min", &NumberValue::GetMin, nullptr),
             InstanceAccessor("max", &NumberValue::GetMax, nullptr),
-            InstanceAccessor("step", &NumberValue::GetStep, nullptr)});
+            InstanceAccessor("step", &NumberValue::GetStep, nullptr),
+            InstanceAccessor("formated", &NumberValue::GetFormated, nullptr)});
 
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
@@ -125,7 +133,7 @@ Napi::FunctionReference SwitchValue::constructor;
 void SwitchValue::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
 
-    Napi::Function func = BaseValue::GetClass(env, exports, "NumberValue", {});
+    Napi::Function func = BaseValue::GetClass(env, exports, "SwitchValue", {});
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
 

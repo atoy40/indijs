@@ -77,6 +77,17 @@ Napi::Value Property::GetTimestamp(const Napi::CallbackInfo& info) {
     return Napi::String::New(env, _property->getTimestamp());
 }
 
+Napi::Value Property::GetPermission(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    if (info.Length() > 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    return Napi::Number::New(env, _property->getPermission());
+}
+
 Napi::Value Property::GetValue(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
@@ -115,6 +126,7 @@ void Property::GetClass(Napi::Env env, Napi::Object exports) {
             Property::InstanceMethod("getGroupName", &Property::GetGroupName),
             Property::InstanceMethod("getDeviceName", &Property::GetDeviceName),
             Property::InstanceMethod("getTimestamp", &Property::GetTimestamp),
+            Property::InstanceMethod("getTimestamp", &Property::GetPermission),
             Property::InstanceMethod("getValue", &Property::GetValue),
         });
 

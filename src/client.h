@@ -14,8 +14,10 @@ class IndiClient : public Napi::ObjectWrap<IndiClient>, public INDI::BaseClient 
 
     Napi::Value Connect(const Napi::CallbackInfo&);
     Napi::Value Disconnect(const Napi::CallbackInfo&);
+    Napi::Value IsConnected(const Napi::CallbackInfo&);
     Napi::Value WatchDevice(const Napi::CallbackInfo&);
     Napi::Value GetDevice(const Napi::CallbackInfo&);
+    Napi::Value GetDevices(const Napi::CallbackInfo&);
     Napi::Value ConnectDevice(const Napi::CallbackInfo&);
     Napi::Value SendNewSwitch(const Napi::CallbackInfo&);
     Napi::Value SendNewNumber(const Napi::CallbackInfo&);
@@ -30,6 +32,7 @@ class IndiClient : public Napi::ObjectWrap<IndiClient>, public INDI::BaseClient 
   private:
     // async workers
     class ConnectWorker;
+    class DisconnectWorker;
     class ConnectDeviceWorker;
     class SendNewNumberWorker;
     class SendNewSwitchWorker;
@@ -45,8 +48,8 @@ class IndiClient : public Napi::ObjectWrap<IndiClient>, public INDI::BaseClient 
     void serverDisconnected(int exit_code);
     void removeDevice(INDI::BaseDevice* dp);
     void removeProperty(INDI::Property* property);
-    void newBLOB(IBLOB* bp){};
-    void newMessage(INDI::BaseDevice* dp, int messageID){};
+    void newBLOB(IBLOB* bp);
+    void newMessage(INDI::BaseDevice* dp, int messageID);
 
     Napi::ThreadSafeFunction _tsfn;
     static Napi::FunctionReference constructor;
@@ -55,6 +58,19 @@ class IndiClient : public Napi::ObjectWrap<IndiClient>, public INDI::BaseClient 
 class IndiClient::ConnectWorker : public PromiseWorker {
   public:
     ConnectWorker(Napi::Env env, IndiClient* client) : PromiseWorker(env), _client(client){};
+
+    void Execute();
+    Napi::Value GetResolve();
+    Napi::Value GetReject(const Napi::Error& e);
+
+  private:
+    bool _result;
+    IndiClient* _client;
+};
+
+class IndiClient::DisconnectWorker : public PromiseWorker {
+  public:
+    DisconnectWorker(Napi::Env env, IndiClient* client) : PromiseWorker(env), _client(client){};
 
     void Execute();
     Napi::Value GetResolve();

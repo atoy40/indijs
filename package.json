@@ -10,19 +10,19 @@
   },
   "scripts": {
     "pretest": "tsc",
-    "prepublish": "tsc",
+    "prepare": "tsc",
     "test": "node --napi-modules ./test/test_binding.js",
     "build": "tsc && node-gyp build"
   },
   "gypfile": true,
   "name": "@atoy40/indijs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "Anthony Hinsinger <anthony.hinsinger@gmail.com>",
   "license": "ISC",
   "description": "INDI nodejs wrapper",
   "repository": {
-      "type": "git",
-      "url": "https://github.com/atoy40/indijs"
+    "type": "git",
+    "url": "https://github.com/atoy40/indijs"
   },
   "devDependencies": {
     "@types/node": "^7.10.10",

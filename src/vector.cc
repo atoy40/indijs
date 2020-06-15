@@ -1,5 +1,5 @@
 #include "vector.h"
-
+#include <iostream>
 // Base vector
 
 template<typename T, typename V>
@@ -12,7 +12,12 @@ BaseVector<T, V>::BaseVector(const Napi::CallbackInfo& info) : Napi::ObjectWrap<
     }
 
     _value = info[0].As<Napi::External<V>>().Data();
-    _valuesref = Napi::Reference<Napi::Array>::New(Napi::Array::New(env));
+    _valuesref = Napi::ObjectReference::New(Napi::Array::New(env), 1);
+}
+
+template<typename T, typename V>
+BaseVector<T, V>::~BaseVector() {
+    _valuesref.Unref();
 }
 
 template<typename T, typename V>
@@ -90,15 +95,22 @@ template<typename T, typename V>
 void BaseVector<T, V>::SetTimestamp(const Napi::CallbackInfo& info, const Napi::Value& value) {}
 
 template<typename T, typename V>
+Napi::Value BaseVector<T, V>::GetPermission(const Napi::CallbackInfo& info) {
+    return Napi::Number::New(info.Env(), this->getPermission());
+}
+
+template<typename T, typename V>
+void BaseVector<T, V>::SetPermission(const Napi::CallbackInfo& info, const Napi::Value& value) {}
+
+template<typename T, typename V>
 Napi::Function BaseVector<T, V>::GetClass(Napi::Env env, Napi::Object exports, const char* name) {
     std::vector<Napi::ClassPropertyDescriptor<T>> properties;
     return GetClass(env, exports, name, properties);
 }
 
 template<typename T, typename V>
-Napi::Function
-    BaseVector<T, V>::GetClass(Napi::Env env, Napi::Object exports, const char* name,
-                               std::vector<Napi::ClassPropertyDescriptor<T>>& properties) {
+Napi::Function BaseVector<T, V>::GetClass(Napi::Env env, Napi::Object exports, const char* name,
+    std::vector<Napi::ClassPropertyDescriptor<T>>& properties) {
     Napi::HandleScope scope(env);
 
     Napi::Function symbolFor =
@@ -120,8 +132,10 @@ Napi::Function
         BaseVector::InstanceAccessor("state", &BaseVector::GetState, &BaseVector::SetState));
     properties.push_back(
         BaseVector::InstanceAccessor("values", &BaseVector::GetValues, &BaseVector::SetValues));
-    properties.push_back(BaseVector::InstanceAccessor("timestamp", &BaseVector::GetTimestamp,
-                                                      &BaseVector::SetTimestamp));
+    properties.push_back(BaseVector::InstanceAccessor(
+        "timestamp", &BaseVector::GetTimestamp, &BaseVector::SetTimestamp));
+    properties.push_back(BaseVector::InstanceAccessor(
+        "permission", &BaseVector::GetPermission, &BaseVector::SetPermission));
 
     Napi::Function func = BaseVector::DefineClass(env, name, properties);
 
@@ -152,6 +166,10 @@ void NumberVector::GetClass(Napi::Env env, Napi::Object exports) {
 
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
+}
+
+IPerm NumberVector::getPermission() {
+    return getHandle()->p;
 }
 
 // Switch vector
@@ -186,6 +204,10 @@ void SwitchVector::GetClass(Napi::Env env, Napi::Object exports) {
     constructor.SuppressDestruct();
 }
 
+IPerm SwitchVector::getPermission() {
+    return getHandle()->p;
+}
+
 // Text vector
 
 Napi::FunctionReference TextVector::constructor;
@@ -213,6 +235,10 @@ void TextVector::GetClass(Napi::Env env, Napi::Object exports) {
     constructor.SuppressDestruct();
 }
 
+IPerm TextVector::getPermission() {
+    return getHandle()->p;
+}
+
 // light vector
 
 Napi::FunctionReference LightVector::constructor;
@@ -238,4 +264,8 @@ void LightVector::GetClass(Napi::Env env, Napi::Object exports) {
 
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
+}
+
+IPerm LightVector::getPermission() {
+    return IP_RO;
 }
