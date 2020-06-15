@@ -125,11 +125,21 @@ class IndiClient::SendNewNumberWorker : public SendNewValueWorker<INumberVectorP
   public:
     SendNewNumberWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client,
         INumberVectorProperty* vector)
-        : SendNewValueWorker(env, deferred, client, vector) {}
+        : SendNewValueWorker(env, deferred, client, vector){};
+    SendNewNumberWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client,
+        std::string device, std::string property, std::string element, double value)
+        : SendNewValueWorker(env, deferred, client, device, property, element), _value(value){};
 
     void Execute() {
-        _client->sendNewNumber(_vector);
+        if (_vector != nullptr) {
+            _client->sendNewNumber(_vector);
+        } else {
+            _client->sendNewNumber(_device.c_str(), _property.c_str(), _element.c_str(), _value);
+        }
     }
+
+  private:
+    double _value;
 };
 
 class IndiClient::SendNewSwitchWorker : public SendNewValueWorker<ISwitchVectorProperty> {

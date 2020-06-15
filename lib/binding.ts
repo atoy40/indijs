@@ -147,6 +147,12 @@ interface IndiClientNative {
   getDevice(name: string): IndiDevice;
   getDevices(): Array<IndiDevice>;
   sendNewNumber(props: Object): Promise<void>;
+  sendNewNumber(
+    device: string,
+    property: string,
+    element: string,
+    value: number,
+  ): Promise<void>;
   sendNewSwitch(props: Object): Promise<void>;
   sendNewSwitch(
     device: string,
@@ -189,8 +195,27 @@ export class Client extends EventEmitter implements IndiEventEmitter {
     return this._addonInstance.getDevices();
   }
 
-  sendNewNumber(props: Object) {
-    return this._addonInstance.sendNewNumber(props);
+  sendNewNumber(
+    propsOrDevice: IndiProperty<IndiNumberVector> | string,
+    property?: string,
+    element?: string,
+    value?: number,
+  ) {
+    if (
+      typeof propsOrDevice === "string" &&
+      typeof property === "string" &&
+      typeof element === "string" &&
+      typeof value === "number"
+    ) {
+      return this._addonInstance.sendNewNumber(
+        propsOrDevice,
+        property,
+        element,
+        value,
+      );
+    } else {
+      return this._addonInstance.sendNewNumber(propsOrDevice);
+    }
   }
 
   sendNewSwitch(

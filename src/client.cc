@@ -170,50 +170,51 @@ Napi::Value IndiClient::ConnectDevice(const Napi::CallbackInfo& info) {
 
 Napi::Value IndiClient::SendNewNumber(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
+    Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+    SendNewNumberWorker* wk;
 
-    if (info.Length() == 1) {
-        NumberVector* nv = Napi::ObjectWrap<NumberVector>::Unwrap(info[0].As<Napi::Object>());
+    if (info.Length() == 1 && info[0].IsObject()) {
+        if (!info[0].IsObject()) {
+            Napi::TypeError::New(env, "You need to provide a property object")
+                .ThrowAsJavaScriptException();
+            return env.Null();
+        }
+        NumberVector* sv = Napi::ObjectWrap<NumberVector>::Unwrap(info[0].As<Napi::Object>());
+        wk = new SendNewNumberWorker(env, deferred, this, sv->getHandle());
+    } else if (info.Length() == 4) {
+        if (!info[0].IsString()) {
+            Napi::TypeError::New(env, "You need to provide a device name")
+                .ThrowAsJavaScriptException();
+            return env.Null();
+        }
 
-        Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
-        SendNewNumberWorker* wk = new SendNewNumberWorker(env, deferred, this, nv->getHandle());
-        wk->Queue();
+        if (!info[1].IsString()) {
+            Napi::TypeError::New(env, "You need to provide a property name")
+                .ThrowAsJavaScriptException();
+            return env.Null();
+        }
 
-        return deferred.Promise();
-    }
+        if (!info[2].IsString()) {
+            Napi::TypeError::New(env, "You need to provide an element name")
+                .ThrowAsJavaScriptException();
+            return env.Null();
+        }
 
-    if (info.Length() < 3) {
+        if (!info[3].IsNumber()) {
+            Napi::TypeError::New(env, "You need to provide a value").ThrowAsJavaScriptException();
+            return env.Null();
+        }
+
+        wk = new SendNewNumberWorker(env, deferred, this, info[0].As<Napi::String>().Utf8Value(),
+            info[1].As<Napi::String>().Utf8Value(), info[2].As<Napi::String>().Utf8Value(),
+            info[3].As<Napi::Number>().DoubleValue());
+    } else {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
         return env.Null();
     }
 
-    if (!info[0].IsString()) {
-        Napi::TypeError::New(env, "You need to provide a device name").ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
-    if (!info[1].IsString()) {
-        Napi::TypeError::New(env, "You need to provide a property name")
-            .ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
-    if (!info[2].IsString()) {
-        Napi::TypeError::New(env, "You need to provide an element name")
-            .ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
-    if (!info[3].IsNumber()) {
-        Napi::TypeError::New(env, "You need to provide an element name")
-            .ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
-    sendNewNumber(info[0].As<Napi::String>().Utf8Value().c_str(),
-        info[1].As<Napi::String>().Utf8Value().c_str(),
-        info[2].As<Napi::String>().Utf8Value().c_str(), info[3].As<Napi::Number>().DoubleValue());
-
-    return info.Env().Undefined();
+    wk->Queue();
+    return deferred.Promise();
 }
 
 Napi::Value IndiClient::SendNewSwitch(const Napi::CallbackInfo& info) {
@@ -272,7 +273,7 @@ void IndiClient::GetClass(Napi::Env env, Napi::Object exports) {
             InstanceMethod("getDevices", &IndiClient::GetDevices),
             InstanceMethod("connectDevice", &IndiClient::ConnectDevice),
             InstanceMethod("sendNewSwitch", &IndiClient::SendNewSwitch),
-            InstanceMethod("sendNewNumber", &IndiClient::SendNewSwitch),
+            InstanceMethod("sendNewNumber", &IndiClient::SendNewNumber),
         });
 
     constructor = Napi::Persistent(func);
@@ -414,7 +415,8 @@ void IndiClient::newBLOB(IBLOB* bp) {
     log("NEW BLOB");
 
     auto callback = [bp](Napi::Env env, Napi::Function jsCallback) {
-        Napi::Buffer<char> buf = Napi::Buffer<char>::New(env, static_cast<char *>(bp->blob), bp->bloblen);
+        Napi::Buffer<char> buf =
+            Napi::Buffer<char>::New(env, static_cast<char*>(bp->blob), bp->bloblen);
         jsCallback.Call({Napi::String::New(env, "newBLOB"), buf});
     };
 
@@ -425,8 +427,7 @@ void IndiClient::newMessage(INDI::BaseDevice* dp, int messageID) {
     log("NEW MSG");
 
     auto callback = [dp, messageID](Napi::Env env, Napi::Function jsCallback) {
-        Napi::Object prop =
-            Device::NewInstance(Napi::External<INDI::BaseDevice>::New(env, dp));
+        Napi::Object prop = Device::NewInstance(Napi::External<INDI::BaseDevice>::New(env, dp));
         jsCallback.Call(
             {Napi::String::New(env, "newMessage"), prop, Napi::Number::New(env, messageID)});
     };
