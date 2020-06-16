@@ -19,8 +19,9 @@ class IndiClient : public Napi::ObjectWrap<IndiClient>, public INDI::BaseClient 
     Napi::Value GetDevice(const Napi::CallbackInfo&);
     Napi::Value GetDevices(const Napi::CallbackInfo&);
     Napi::Value ConnectDevice(const Napi::CallbackInfo&);
-    Napi::Value SendNewSwitch(const Napi::CallbackInfo&);
     Napi::Value SendNewNumber(const Napi::CallbackInfo&);
+    Napi::Value SendNewSwitch(const Napi::CallbackInfo&);
+    Napi::Value SendNewText(const Napi::CallbackInfo&);
 
     void reset() {
         _tsfn.Release();
@@ -36,6 +37,7 @@ class IndiClient : public Napi::ObjectWrap<IndiClient>, public INDI::BaseClient 
     class ConnectDeviceWorker;
     class SendNewNumberWorker;
     class SendNewSwitchWorker;
+    class SendNewTextWorker;
 
     // INDI::BaseClient implementation.
     void newDevice(INDI::BaseDevice* dp);
@@ -160,4 +162,25 @@ class IndiClient::SendNewSwitchWorker : public SendNewValueWorker<ISwitchVectorP
     }
 
   private:
+};
+
+class IndiClient::SendNewTextWorker : public SendNewValueWorker<ITextVectorProperty> {
+  public:
+    SendNewTextWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client,
+        ITextVectorProperty* vector)
+        : SendNewValueWorker(env, deferred, client, vector) {}
+    SendNewTextWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client,
+        std::string device, std::string property, std::string element, std::string value)
+        : SendNewValueWorker(env, deferred, client, device, property, element), _value(value) {}
+
+    void Execute() {
+        if (_vector != nullptr) {
+            _client->sendNewText(_vector);
+        } else {
+            _client->sendNewText(_device.c_str(), _property.c_str(), _element.c_str(), _value.c_str());
+        }
+    }
+
+  private:
+    std::string _value;
 };

@@ -260,6 +260,55 @@ Napi::Value IndiClient::SendNewSwitch(const Napi::CallbackInfo& info) {
     return deferred.Promise();
 }
 
+Napi::Value IndiClient::SendNewText(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+    SendNewTextWorker* wk;
+
+    if (info.Length() == 1 && info[0].IsObject()) {
+        if (!info[0].IsObject()) {
+            Napi::TypeError::New(env, "You need to provide a property object")
+                .ThrowAsJavaScriptException();
+            return env.Null();
+        }
+        TextVector* sv = Napi::ObjectWrap<TextVector>::Unwrap(info[0].As<Napi::Object>());
+        wk = new SendNewTextWorker(env, deferred, this, sv->getHandle());
+    } else if (info.Length() == 4) {
+        if (!info[0].IsString()) {
+            Napi::TypeError::New(env, "You need to provide a device name")
+                .ThrowAsJavaScriptException();
+            return env.Null();
+        }
+
+        if (!info[1].IsString()) {
+            Napi::TypeError::New(env, "You need to provide a property name")
+                .ThrowAsJavaScriptException();
+            return env.Null();
+        }
+
+        if (!info[2].IsString()) {
+            Napi::TypeError::New(env, "You need to provide an element name")
+                .ThrowAsJavaScriptException();
+            return env.Null();
+        }
+
+        if (!info[3].IsString()) {
+            Napi::TypeError::New(env, "You need to provide a value").ThrowAsJavaScriptException();
+            return env.Null();
+        }
+
+        wk = new SendNewTextWorker(env, deferred, this, info[0].As<Napi::String>().Utf8Value(),
+            info[1].As<Napi::String>().Utf8Value(), info[2].As<Napi::String>().Utf8Value(),
+            info[3].As<Napi::String>().Utf8Value());
+    } else {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    wk->Queue();
+    return deferred.Promise();
+}
+
 void IndiClient::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
 
@@ -272,8 +321,9 @@ void IndiClient::GetClass(Napi::Env env, Napi::Object exports) {
             InstanceMethod("getDevice", &IndiClient::GetDevice),
             InstanceMethod("getDevices", &IndiClient::GetDevices),
             InstanceMethod("connectDevice", &IndiClient::ConnectDevice),
-            InstanceMethod("sendNewSwitch", &IndiClient::SendNewSwitch),
             InstanceMethod("sendNewNumber", &IndiClient::SendNewNumber),
+            InstanceMethod("sendNewSwitch", &IndiClient::SendNewSwitch),
+            InstanceMethod("sendNewText", &IndiClient::SendNewText),
         });
 
     constructor = Napi::Persistent(func);
@@ -315,6 +365,8 @@ void IndiClient::serverDisconnected(int exit_code) {
 
 void IndiClient::newDevice(INDI::BaseDevice* dp) {
     log("NEW DEVICE");
+
+    setBLOBMode(B_ALSO, dp->getDeviceName());
 
     auto callback = [dp](Napi::Env env, Napi::Function jsCallback) {
         Napi::Object dev = Device::NewInstance(Napi::External<INDI::BaseDevice>::New(env, dp));

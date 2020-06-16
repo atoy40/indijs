@@ -151,13 +151,20 @@ interface IndiClientNative {
     device: string,
     property: string,
     element: string,
-    value: number,
+    value: number
   ): Promise<void>;
   sendNewSwitch(props: Object): Promise<void>;
   sendNewSwitch(
     device: string,
     property: string,
     element: string
+  ): Promise<void>;
+  sendNewText(props: Object): Promise<void>;
+  sendNewText(
+    device: string,
+    property: string,
+    element: string,
+    value: string
   ): Promise<void>;
 }
 
@@ -199,7 +206,7 @@ export class Client extends EventEmitter implements IndiEventEmitter {
     propsOrDevice: IndiProperty<IndiNumberVector> | string,
     property?: string,
     element?: string,
-    value?: number,
+    value?: number
   ) {
     if (
       typeof propsOrDevice === "string" &&
@@ -211,7 +218,7 @@ export class Client extends EventEmitter implements IndiEventEmitter {
         propsOrDevice,
         property,
         element,
-        value,
+        value
       );
     } else {
       return this._addonInstance.sendNewNumber(propsOrDevice);
@@ -235,6 +242,29 @@ export class Client extends EventEmitter implements IndiEventEmitter {
       );
     } else {
       return this._addonInstance.sendNewSwitch(propsOrDevice);
+    }
+  }
+
+  sendNewText(
+    propsOrDevice: IndiProperty<IndiTextVector> | string,
+    property?: string,
+    element?: string,
+    value?: string
+  ) {
+    if (
+      typeof propsOrDevice === "string" &&
+      typeof property === "string" &&
+      typeof element === "string" &&
+      typeof value === "string"
+    ) {
+      return this._addonInstance.sendNewText(
+        propsOrDevice,
+        property,
+        element,
+        value
+      );
+    } else {
+      return this._addonInstance.sendNewText(propsOrDevice);
     }
   }
 
