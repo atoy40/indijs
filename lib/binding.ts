@@ -113,8 +113,8 @@ interface IndiText extends IndiValue<string> {}
 interface IndiLight extends IndiValue<IndiState> {}
 
 interface IndiEventEmitter {
-  on(event: "connect", listener: () => void): this;
-  on(event: "disconnect", listener: (code: number) => void): this;
+  on(event: "connected", listener: () => void): this;
+  on(event: "disconnected", listener: (code: number) => void): this;
   on(event: "newDevice", listener: (device: IndiDevice) => void): this;
   on(event: "removeDevice", listener: (name: string) => void): this;
   on(

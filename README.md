@@ -27,8 +27,8 @@ const INDIjs = require("@atoy40/indijs");
 const client = new INDIjs.Client("localhost");
 
 client
-  .on("connect", () => { /* code */ })
-  .on("disconnect", () => { /* code */ })
+  .on("connected", () => { /* code */ })
+  .on("disconnected", (reason_code) => { /* code */ })
   .on("newDevice", (device) => { /* code */ })
   .on("removeDevice", (devname) => { /* code */ })
   .on("newProperty", (property) => { /* code */ })
