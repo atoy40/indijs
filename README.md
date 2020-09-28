@@ -37,6 +37,7 @@ client
   .on("newSwitch", (s) => { /* code */ })
   .on("newText", (t) => { /* code */ })
   .on("newLight", (l) => { /* code */ })
+  .on("newBLOB", (buffer) => { /* code */ })
 
 client.connect().then(() => {
   console.log("connected...");
