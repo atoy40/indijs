@@ -24,7 +24,7 @@ Usage
 ```js
 import { Client } from "@atoy40/indijs";
 
-const client = new INDIjs.Client("localhost");
+const client = new Client("localhost");
 
 client
   .on("connected", () => { /* code */ })
