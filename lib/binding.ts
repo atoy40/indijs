@@ -51,9 +51,10 @@ export enum IndiPerm {
 
 export interface IndiDevice {
   getDeviceName(): string;
-  getProperty(): IndiProperty<IndiVector>;
+  getProperty(name: string): IndiProperty<IndiVector>;
   getProperties(): Array<IndiProperty<IndiVector>>;
   getDriverInterface(): Number;
+  messageQueue(id: number): string;
   connected: boolean;
 }
 
@@ -140,6 +141,10 @@ export declare interface Client {
   on(
     event: "newMessage",
     listener: (device: IndiDevice, id: number) => void
+  ): this;
+  on(
+    event: "newBLOB",
+    listener: (blob: Buffer) => void
   ): this;
 }
 
