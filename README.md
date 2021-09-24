@@ -22,9 +22,9 @@ Usage
 ---
 
 ```js
-const INDIjs = require("@atoy40/indijs");
+import { Client } from "@atoy40/indijs";
 
-const client = new INDIjs.Client("localhost");
+const client = new Client("localhost");
 
 client
   .on("connected", () => { /* code */ })
@@ -37,6 +37,8 @@ client
   .on("newSwitch", (s) => { /* code */ })
   .on("newText", (t) => { /* code */ })
   .on("newLight", (l) => { /* code */ })
+  .on("newBLOB", (buffer) => { /* code */ })
+  .on("newMessage", (device, messageID) => { /* code */ })
 
 client.connect().then(() => {
   console.log("connected...");
