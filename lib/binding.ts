@@ -51,8 +51,8 @@ export enum IndiPerm {
 
 export interface IndiDevice {
   getDeviceName(): string;
-  getProperty(name: string): IndiProperty<IndiVector>;
-  getProperties(): Array<IndiProperty<IndiVector>>;
+  getProperty(name: string): IndiProperty<IndiVectors>;
+  getProperties(): Array<IndiProperty<IndiVectors>>;
   getDriverInterface(): Number;
   messageQueue(id: number): string;
   connected: boolean;
