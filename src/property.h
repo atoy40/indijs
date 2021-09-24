@@ -13,6 +13,7 @@ class Property : public Napi::ObjectWrap<Property> {
     Napi::Value GetGroupName(const Napi::CallbackInfo&);
     Napi::Value GetDeviceName(const Napi::CallbackInfo&);
     Napi::Value GetTimestamp(const Napi::CallbackInfo&);
+    Napi::Value GetState(const Napi::CallbackInfo&);
     Napi::Value GetPermission(const Napi::CallbackInfo&);
     Napi::Value GetValue(const Napi::CallbackInfo&);
 

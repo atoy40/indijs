@@ -49,7 +49,7 @@ export enum IndiPerm {
   ReadWrite,
 }
 
-interface IndiDevice {
+export interface IndiDevice {
   getDeviceName(): string;
   getProperty(): IndiProperty<IndiVector>;
   getProperties(): Array<IndiProperty<IndiVector>>;
@@ -57,18 +57,19 @@ interface IndiDevice {
   connected: boolean;
 }
 
-interface IndiProperty<T extends IndiVector> {
+export interface IndiProperty<T extends IndiVector> {
   getName(): string;
   getType(): PropertyType;
   getLabel(): string;
   getGroupName(): string;
   getDeviceName(): string;
   getTimestamp(): string;
+  getState(): IndiState;
   getPermission(): IndiPerm;
   getValue(): T;
 }
 
-interface IndiVector {
+export interface IndiVector {
   name: string;
   label: string;
   group: string;
@@ -77,53 +78,56 @@ interface IndiVector {
   permission: IndiPerm;
 }
 
-interface IndiNumberVector extends IndiVector {
+export interface IndiNumberVector extends IndiVector {
   values: Array<IndiNumber>;
 }
 
-interface IndiSwitchVector extends IndiVector {
+export interface IndiSwitchVector extends IndiVector {
   rule: IndiRule;
   values: Array<IndiSwitch>;
 }
 
-interface IndiTextVector extends IndiVector {
+export interface IndiTextVector extends IndiVector {
   values: Array<IndiText>;
 }
 
-interface IndiLightVector extends IndiVector {
+export interface IndiLightVector extends IndiVector {
   values: Array<IndiLight>;
 }
 
-interface IndiValue<T> {
+export type IndiVectors =
+  | IndiNumberVector
+  | IndiSwitchVector
+  | IndiTextVector
+  | IndiLightVector;
+
+export interface IndiValue<T> {
   name: string;
   label: string;
   value: T;
 }
 
-interface IndiNumber extends IndiValue<number> {
+export interface IndiNumber extends IndiValue<number> {
   min: number;
   max: number;
   step: number;
+  formated: string;
 }
 
-interface IndiSwitch extends IndiValue<boolean> {}
+export interface IndiSwitch extends IndiValue<boolean> {}
 
-interface IndiText extends IndiValue<string> {}
+export interface IndiText extends IndiValue<string> {}
 
-interface IndiLight extends IndiValue<IndiState> {}
+export interface IndiLight extends IndiValue<IndiState> {}
 
-interface IndiEventEmitter {
+export declare interface Client {
   on(event: "connected", listener: () => void): this;
   on(event: "disconnected", listener: (code: number) => void): this;
   on(event: "newDevice", listener: (device: IndiDevice) => void): this;
   on(event: "removeDevice", listener: (name: string) => void): this;
   on(
     event: "newProperty",
-    listener: (
-      property: IndiProperty<
-        IndiNumberVector | IndiSwitchVector | IndiTextVector | IndiLightVector
-      >
-    ) => void
+    listener: (property: IndiProperty<IndiVectors>) => void
   ): this;
   on(
     event: "removeProperty",
@@ -168,7 +172,10 @@ interface IndiClientNative {
   ): Promise<void>;
 }
 
-export class Client extends EventEmitter implements IndiEventEmitter {
+export class Client extends EventEmitter {
+  // private members
+  private _addonInstance: IndiClientNative;
+
   constructor(hostname = "localhost", port = 7624) {
     super();
     this._addonInstance = new addon.IndiClient(
@@ -267,7 +274,4 @@ export class Client extends EventEmitter implements IndiEventEmitter {
       return this._addonInstance.sendNewText(propsOrDevice);
     }
   }
-
-  // private members
-  private _addonInstance: IndiClientNative;
 }

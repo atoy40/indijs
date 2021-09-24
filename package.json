@@ -12,11 +12,12 @@
     "pretest": "tsc",
     "prepare": "tsc",
     "test": "node --napi-modules ./test/test_binding.js",
+    "prebuild": "node-gyp configure",
     "build": "tsc && node-gyp build"
   },
   "gypfile": true,
   "name": "@atoy40/indijs",
-  "version": "0.0.4",
+  "version": "0.0.7",
   "author": "Anthony Hinsinger <anthony.hinsinger@gmail.com>",
   "license": "ISC",
   "description": "INDI nodejs wrapper",

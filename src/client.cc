@@ -38,7 +38,7 @@ IndiClient::IndiClient(const Napi::CallbackInfo& info) : ObjectWrap(info) {
     _tsfn = Napi::ThreadSafeFunction::New(env,
         info[2].As<Napi::Function>(), // JavaScript function called asynchronously
         "Resource Name", // Name
-        0, // Unlimited queue
+        1, // one callback in the queue to avoid multiple dev/prop removes in the same loop
         1 // Only one thread will use this initially
     );
 
