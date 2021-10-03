@@ -49,6 +49,12 @@ export enum IndiPerm {
   ReadWrite,
 }
 
+export enum BLOBHandling {
+  Never,
+  Also,
+  Only,
+}
+
 export interface IndiDevice {
   getDeviceName(): string;
   getProperty(name: string): IndiProperty<IndiVectors>;
@@ -96,11 +102,16 @@ export interface IndiLightVector extends IndiVector {
   values: Array<IndiLight>;
 }
 
+export interface IndiBLOBVector extends IndiVector {
+  values: Array<IndiBLOB>;
+}
+
 export type IndiVectors =
   | IndiNumberVector
   | IndiSwitchVector
   | IndiTextVector
-  | IndiLightVector;
+  | IndiLightVector
+  | IndiBLOBVector;
 
 export interface IndiValue<T> {
   name: string;
@@ -113,13 +124,24 @@ export interface IndiNumber extends IndiValue<number> {
   max: number;
   step: number;
   formated: string;
+  getVector(): IndiNumberVector;
 }
 
-export interface IndiSwitch extends IndiValue<boolean> {}
+export interface IndiSwitch extends IndiValue<boolean> {
+  getVector(): IndiNumberVector;
+}
 
-export interface IndiText extends IndiValue<string> {}
+export interface IndiText extends IndiValue<string> {
+  getVector(): IndiTextVector;
+}
 
-export interface IndiLight extends IndiValue<IndiState> {}
+export interface IndiLight extends IndiValue<IndiState> {
+  getVector(): IndiLightVector;
+}
+
+export interface IndiBLOB extends IndiValue<Buffer> {
+  getVector(): IndiBLOBVector;
+}
 
 export declare interface Client {
   on(event: "connected", listener: () => void): this;
@@ -135,26 +157,27 @@ export declare interface Client {
     listener: (name: string, device: string) => void
   ): this;
   on(event: "newNumber", listener: (number: IndiNumberVector) => void): this;
-  on(event: "newSwitch", listener: (number: IndiSwitchVector) => void): this;
-  on(event: "newText", listener: (number: IndiTextVector) => void): this;
-  on(event: "newLight", listener: (number: IndiLightVector) => void): this;
+  on(event: "newSwitch", listener: (sw: IndiSwitchVector) => void): this;
+  on(event: "newText", listener: (text: IndiTextVector) => void): this;
+  on(event: "newLight", listener: (light: IndiLightVector) => void): this;
   on(
     event: "newMessage",
     listener: (device: IndiDevice, id: number) => void
   ): this;
-  on(
-    event: "newBLOB",
-    listener: (blob: Buffer) => void
-  ): this;
+  on(event: "newBLOB", listener: (blob: IndiBLOB) => void): this;
 }
 
 interface IndiClientNative {
+  setServer(hostname: string, port: number): void;
   connect(): Promise<boolean>;
   disconnect(): Promise<boolean>;
   connected: boolean;
   connectDevice(name: string): Promise<void>;
   getDevice(name: string): IndiDevice;
   getDevices(): Array<IndiDevice>;
+  watchDevice(device: string): void;
+  setBLOBMode(mode: BLOBHandling, device: string, prop: string): void;
+  setBLOBMode(mode: BLOBHandling, device: string): void;
   sendNewNumber(props: Object): Promise<void>;
   sendNewNumber(
     device: string,
@@ -190,6 +213,10 @@ export class Client extends EventEmitter {
     );
   }
 
+  setServer(hostname: string, port = 7624) {
+    this._addonInstance.setServer(hostname, port);
+  }
+
   connect() {
     return this._addonInstance.connect();
   }
@@ -212,6 +239,18 @@ export class Client extends EventEmitter {
 
   getDevices() {
     return this._addonInstance.getDevices();
+  }
+
+  watchDevice(device: string) {
+    this._addonInstance.watchDevice(device);
+  }
+
+  setBLOBMode(mode: BLOBHandling, device: string, prop?: string) {
+    if (prop) {
+      this._addonInstance.setBLOBMode(mode, device, prop);
+    } else {
+      this._addonInstance.setBLOBMode(mode, device);
+    }
   }
 
   sendNewNumber(

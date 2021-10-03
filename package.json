@@ -6,7 +6,7 @@
   "types": "dist/binding.d.ts",
   "dependencies": {
     "colors": "^1.4.0",
-    "node-addon-api": "^1.7.1"
+    "node-addon-api": "^1.7.2"
   },
   "scripts": {
     "pretest": "tsc",
@@ -17,7 +17,7 @@
   },
   "gypfile": true,
   "name": "@atoy40/indijs",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "author": "Anthony Hinsinger <anthony.hinsinger@gmail.com>",
   "license": "ISC",
   "description": "INDI nodejs wrapper",
@@ -26,7 +26,7 @@
     "url": "https://github.com/atoy40/indijs"
   },
   "devDependencies": {
-    "@types/node": "^7.10.10",
+    "@types/node": "^7.10.14",
     "typescript": "^2.3.3"
   }
 }

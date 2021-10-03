@@ -12,11 +12,13 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     SwitchValue::GetClass(env, exports);
     TextValue::GetClass(env, exports);
     LightValue::GetClass(env, exports);
+    BLOBValue::GetClass(env, exports);
 
     NumberVector::GetClass(env, exports);
     SwitchVector::GetClass(env, exports);
     TextVector::GetClass(env, exports);
     LightVector::GetClass(env, exports);
+    BLOBVector::GetClass(env, exports);
 
     return exports;
 }

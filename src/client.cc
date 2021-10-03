@@ -46,6 +46,29 @@ IndiClient::IndiClient(const Napi::CallbackInfo& info) : ObjectWrap(info) {
         info[0].As<Napi::String>().Utf8Value().c_str(), info[1].As<Napi::Number>().Uint32Value());
 }
 
+Napi::Value IndiClient::SetServer(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    if (info.Length() != 2) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    if (!info[0].IsString()) {
+        Napi::TypeError::New(env, "You need to provide a host name").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    if (!info[1].IsNumber()) {
+        Napi::TypeError::New(env, "You need to provide a port").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    setServer(info[0].As<Napi::String>().Utf8Value().c_str(), info[1].As<Napi::Number>().Uint32Value());
+
+    return info.Env().Undefined();
+}
+
 Napi::Value IndiClient::Connect(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
@@ -99,6 +122,34 @@ Napi::Value IndiClient::WatchDevice(const Napi::CallbackInfo& info) {
     }
 
     watchDevice(info[0].As<Napi::String>().Utf8Value().c_str());
+
+    return info.Env().Undefined();
+}
+
+Napi::Value IndiClient::SetBLOBMode(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    if (info.Length() < 2) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    if (!info[0].IsNumber()) {
+        Napi::TypeError::New(env, "You need to provide a number").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    if (!info[1].IsString()) {
+        Napi::TypeError::New(env, "You need to provide a device name").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    if (info.Length() == 3 && !info[2].IsString()) {
+        Napi::TypeError::New(env, "You need to provide a property name").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    setBLOBMode((BLOBHandling)info[0].As<Napi::Number>().Uint32Value(), info[1].As<Napi::String>().Utf8Value().c_str());
 
     return info.Env().Undefined();
 }
@@ -314,10 +365,12 @@ void IndiClient::GetClass(Napi::Env env, Napi::Object exports) {
 
     Napi::Function func = DefineClass(env, "IndiClient",
         {
+            InstanceMethod("setServer", &IndiClient::SetServer),
             InstanceMethod("connect", &IndiClient::Connect),
             InstanceMethod("disconnect", &IndiClient::Disconnect),
             InstanceAccessor("connected", &IndiClient::IsConnected, nullptr),
             InstanceMethod("watchDevice", &IndiClient::WatchDevice),
+            InstanceMethod("setBLOBMode", &IndiClient::SetBLOBMode),
             InstanceMethod("getDevice", &IndiClient::GetDevice),
             InstanceMethod("getDevices", &IndiClient::GetDevices),
             InstanceMethod("connectDevice", &IndiClient::ConnectDevice),
@@ -365,8 +418,6 @@ void IndiClient::serverDisconnected(int exit_code) {
 
 void IndiClient::newDevice(INDI::BaseDevice* dp) {
     log("NEW DEVICE");
-
-    setBLOBMode(B_ALSO, dp->getDeviceName());
 
     auto callback = [dp](Napi::Env env, Napi::Function jsCallback) {
         Napi::Object dev = Device::NewInstance(Napi::External<INDI::BaseDevice>::New(env, dp));
@@ -467,9 +518,9 @@ void IndiClient::newBLOB(IBLOB* bp) {
     log("NEW BLOB");
 
     auto callback = [bp](Napi::Env env, Napi::Function jsCallback) {
-        Napi::Buffer<char> buf =
-            Napi::Buffer<char>::New(env, static_cast<char*>(bp->blob), bp->bloblen);
-        jsCallback.Call({Napi::String::New(env, "newBLOB"), buf});
+        Napi::Object blob =
+            BLOBValue::NewInstance(Napi::External<IBLOB>::New(env, bp));
+        jsCallback.Call({Napi::String::New(env, "newBLOB"), blob});
     };
 
     _tsfn.BlockingCall(callback);

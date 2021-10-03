@@ -98,3 +98,15 @@ class LightVector : public BaseVector<LightVector, ILightVectorProperty> {
   private:
     static Napi::FunctionReference constructor;
 };
+
+class BLOBVector : public BaseVector<BLOBVector, IBLOBVectorProperty> {
+  public:
+    BLOBVector(const Napi::CallbackInfo& info);
+
+    static Napi::Object NewInstance(Napi::Value arg);
+    static void GetClass(Napi::Env env, Napi::Object exports);
+    IPerm getPermission();
+
+  private:
+    static Napi::FunctionReference constructor;
+};

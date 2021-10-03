@@ -269,3 +269,33 @@ void LightVector::GetClass(Napi::Env env, Napi::Object exports) {
 IPerm LightVector::getPermission() {
     return IP_RO;
 }
+
+// BLOB vector
+
+Napi::FunctionReference BLOBVector::constructor;
+
+BLOBVector::BLOBVector(const Napi::CallbackInfo& info) : BaseVector(info) {
+    for (int i = 0; i < getHandle()->nbp; i++) {
+        Napi::Object value =
+            BLOBValue::NewInstance(Napi::External<IBLOB>::New(info.Env(), getHandle()->bp + i));
+        getValues().Set(i, value);
+    }
+}
+
+Napi::Object BLOBVector::NewInstance(Napi::Value arg) {
+    Napi::Object obj = constructor.New({arg});
+    return obj;
+}
+
+void BLOBVector::GetClass(Napi::Env env, Napi::Object exports) {
+    Napi::HandleScope scope(env);
+
+    Napi::Function func = BaseVector::GetClass(env, exports, "NumberVector");
+
+    constructor = Napi::Persistent(func);
+    constructor.SuppressDestruct();
+}
+
+IPerm BLOBVector::getPermission() {
+    return getHandle()->p;
+}

@@ -12,10 +12,12 @@ class IndiClient : public Napi::ObjectWrap<IndiClient>, public INDI::BaseClient 
   public:
     IndiClient(const Napi::CallbackInfo&);
 
+    Napi::Value SetServer(const Napi::CallbackInfo&);
     Napi::Value Connect(const Napi::CallbackInfo&);
     Napi::Value Disconnect(const Napi::CallbackInfo&);
     Napi::Value IsConnected(const Napi::CallbackInfo&);
     Napi::Value WatchDevice(const Napi::CallbackInfo&);
+    Napi::Value SetBLOBMode(const Napi::CallbackInfo&);
     Napi::Value GetDevice(const Napi::CallbackInfo&);
     Napi::Value GetDevices(const Napi::CallbackInfo&);
     Napi::Value ConnectDevice(const Napi::CallbackInfo&);
