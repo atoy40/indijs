@@ -140,6 +140,7 @@ export interface IndiLight extends IndiValue<IndiState> {
 }
 
 export interface IndiBLOB extends IndiValue<Buffer> {
+  format: string;
   getVector(): IndiBLOBVector;
 }
 

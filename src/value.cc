@@ -119,17 +119,20 @@ Napi::Value NumberValue::GetFormated(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value NumberValue::getVector(const Napi::Env& env) {
-    return NumberVector::NewInstance(Napi::External<INumberVectorProperty>::New(env, getHandle()->nvp));
+    return NumberVector::NewInstance(
+        Napi::External<INumberVectorProperty>::New(env, getHandle()->nvp));
 }
 
 void NumberValue::GetClass(Napi::Env env, Napi::Object exports) {
     // Napi::HandleScope scope(env);
 
     Napi::Function func = BaseValue::GetClass(env, exports, "NumberValue",
-        {InstanceAccessor("min", &NumberValue::GetMin, nullptr),
+        {
+            InstanceAccessor("min", &NumberValue::GetMin, nullptr),
             InstanceAccessor("max", &NumberValue::GetMax, nullptr),
             InstanceAccessor("step", &NumberValue::GetStep, nullptr),
-            InstanceAccessor("formated", &NumberValue::GetFormated, nullptr)});
+            InstanceAccessor("formated", &NumberValue::GetFormated, nullptr),
+        });
 
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
@@ -147,33 +150,16 @@ SwitchValue::SwitchValue(const Napi::CallbackInfo& info) : BaseValue(info) {}
 Napi::FunctionReference SwitchValue::constructor;
 
 Napi::Value SwitchValue::getVector(const Napi::Env& env) {
-    return SwitchVector::NewInstance(Napi::External<ISwitchVectorProperty>::New(env, getHandle()->svp));
+    return SwitchVector::NewInstance(
+        Napi::External<ISwitchVectorProperty>::New(env, getHandle()->svp));
 }
 
 void SwitchValue::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
 
-    Napi::Function func = BaseValue::GetClass(env, exports, "SwitchValue", {});
+    Napi::Function func = BaseValue::GetClass(env, exports, "SwitchValue");
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
-
-    /*Napi::Function symbolFor =
-        Napi::Env(env).Global().Get("Symbol").As<Napi::Object>().Get("for").As<Napi::Function>();
-    Napi::Symbol inspectSymbol =
-        symbolFor.Call({Napi::String::New(env, "nodejs.util.inspect.custom")}).As<Napi::Symbol>();
-
-    Napi::Function func =
-        DefineClass(env, "SwitchValue",
-                    {
-                        InstanceMethod("toJSON", &SwitchValue::ToObject),
-                        InstanceMethod(inspectSymbol, &SwitchValue::ToObject),
-                        InstanceAccessor("name", &SwitchValue::GetName, &SwitchValue::SetName),
-                        InstanceAccessor("label", &SwitchValue::GetLabel, &SwitchValue::SetLabel),
-                        InstanceAccessor("value", &SwitchValue::GetValue, &SwitchValue::SetValue),
-                    });
-
-    constructor = Napi::Persistent(func);
-    constructor.SuppressDestruct();*/
 }
 
 Napi::Object SwitchValue::NewInstance(Napi::Value arg) {
@@ -194,20 +180,7 @@ Napi::Value TextValue::getVector(const Napi::Env& env) {
 void TextValue::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
 
-    Napi::Function symbolFor =
-        Napi::Env(env).Global().Get("Symbol").As<Napi::Object>().Get("for").As<Napi::Function>();
-    Napi::Symbol inspectSymbol =
-        symbolFor.Call({Napi::String::New(env, "nodejs.util.inspect.custom")}).As<Napi::Symbol>();
-
-    Napi::Function func = DefineClass(env, "TextValue",
-        {
-            InstanceMethod("toJSON", &TextValue::ToObject),
-            InstanceMethod(inspectSymbol, &TextValue::ToObject),
-            InstanceAccessor("name", &TextValue::GetName, &TextValue::SetName),
-            InstanceAccessor("label", &TextValue::GetLabel, &TextValue::SetLabel),
-            InstanceAccessor("value", &TextValue::GetValue, &TextValue::SetValue),
-        });
-
+    Napi::Function func = BaseValue::GetClass(env, exports, "TextValue", {});
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
 }
@@ -224,26 +197,14 @@ LightValue::LightValue(const Napi::CallbackInfo& info) : BaseValue(info) {}
 Napi::FunctionReference LightValue::constructor;
 
 Napi::Value LightValue::getVector(const Napi::Env& env) {
-    return LightVector::NewInstance(Napi::External<ILightVectorProperty>::New(env, getHandle()->lvp));
+    return LightVector::NewInstance(
+        Napi::External<ILightVectorProperty>::New(env, getHandle()->lvp));
 }
 
 void LightValue::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
 
-    Napi::Function symbolFor =
-        Napi::Env(env).Global().Get("Symbol").As<Napi::Object>().Get("for").As<Napi::Function>();
-    Napi::Symbol inspectSymbol =
-        symbolFor.Call({Napi::String::New(env, "nodejs.util.inspect.custom")}).As<Napi::Symbol>();
-
-    Napi::Function func = DefineClass(env, "LightValue",
-        {
-            InstanceMethod("toJSON", &LightValue::ToObject),
-            InstanceMethod(inspectSymbol, &LightValue::ToObject),
-            InstanceAccessor("name", &LightValue::GetName, &LightValue::SetName),
-            InstanceAccessor("label", &LightValue::GetLabel, &LightValue::SetLabel),
-            InstanceAccessor("value", &LightValue::GetValue, &LightValue::SetValue),
-        });
-
+    Napi::Function func = BaseValue::GetClass(env, exports, "LightValue", {});
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
 }
@@ -263,29 +224,15 @@ Napi::Value BLOBValue::getVector(const Napi::Env& env) {
     return BLOBVector::NewInstance(Napi::External<IBLOBVectorProperty>::New(env, getHandle()->bvp));
 }
 
+Napi::Value BLOBValue::GetFormat(const Napi::CallbackInfo& info) {
+    return Napi::String::New(info.Env(), getHandle()->format);
+}
+
 void BLOBValue::GetClass(Napi::Env env, Napi::Object exports) {
-    /*Napi::HandleScope scope(env);
-
-    Napi::Function symbolFor =
-        Napi::Env(env).Global().Get("Symbol").As<Napi::Object>().Get("for").As<Napi::Function>();
-    Napi::Symbol inspectSymbol =
-        symbolFor.Call({Napi::String::New(env, "nodejs.util.inspect.custom")}).As<Napi::Symbol>();
-
-    Napi::Function func = DefineClass(env, "LightValue",
-        {
-            InstanceMethod("toJSON", &BLOBValue::ToObject),
-            InstanceMethod(inspectSymbol, &BLOBValue::ToObject),
-            InstanceAccessor("name", &BLOBValue::GetName, &BLOBValue::SetName),
-            InstanceAccessor("label", &BLOBValue::GetLabel, &BLOBValue::SetLabel),
-            InstanceAccessor("value", &BLOBValue::GetValue, &BLOBValue::SetValue),
-        });
-
-    constructor = Napi::Persistent(func);
-    constructor.SuppressDestruct();*/
-
     Napi::HandleScope scope(env);
 
-    Napi::Function func = BaseValue::GetClass(env, exports, "BLOBValue");
+    Napi::Function func = BaseValue::GetClass(
+        env, exports, "BLOBValue", {InstanceAccessor("format", &BLOBValue::GetFormat, nullptr)});
 
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();

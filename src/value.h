@@ -139,10 +139,11 @@ class BLOBValue : public BaseValue<BLOBValue, IBLOB> {
 
     static void GetClass(Napi::Env, Napi::Object);
     static Napi::Object NewInstance(Napi::Value);
+    Napi::Value GetFormat(const Napi::CallbackInfo& info);
 
     Napi::Value getVector(const Napi::Env& env);
     Napi::Value getValue(const Napi::Env& env) {
-        return Napi::Buffer<char>::New(env, static_cast<char*>(getHandle()->blob), getHandle()->bloblen);
+        return Napi::Buffer<char>::Copy(env, static_cast<char*>(getHandle()->blob), getHandle()->bloblen);
     }
 
     void setValue(const Napi::Env& env, const Napi::Value& value) {}
