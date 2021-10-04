@@ -44,6 +44,7 @@ indi
   })
 
   .on("newDevice", (device) => {
+    indi.setBLOBMode(Indi.BLOBHandling.Never, device.getDeviceName());
     const str = `[new device] "${device.getDeviceName()}"`;
     console.log(device.connected ? str.green : str.red);
     // auto connect device
