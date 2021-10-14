@@ -166,6 +166,7 @@ export declare interface Client {
     listener: (device: IndiDevice, id: number) => void
   ): this;
   on(event: "newBLOB", listener: (blob: IndiBLOB) => void): this;
+  on(eventName: string | symbol, listener: (...args: any[]) => void): this
 }
 
 interface IndiClientNative {
