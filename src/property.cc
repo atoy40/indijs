@@ -120,6 +120,9 @@ Napi::Value Property::GetValue(const Napi::CallbackInfo& info) {
         case INDI_LIGHT:
             return LightVector::NewInstance(
                 Napi::External<ILightVectorProperty>::New(env, _property->getLight()));
+        case INDI_BLOB:
+            return LightVector::NewInstance(
+                Napi::External<IBLOBVectorProperty>::New(env, _property->getBLOB()));
         default:
             return env.Undefined();
     }

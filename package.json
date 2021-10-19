@@ -17,7 +17,7 @@
   },
   "gypfile": true,
   "name": "@atoy40/indijs",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "author": "Anthony Hinsinger <anthony.hinsinger@gmail.com>",
   "license": "ISC",
   "description": "INDI nodejs wrapper",
