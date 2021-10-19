@@ -290,7 +290,7 @@ Napi::Object BLOBVector::NewInstance(Napi::Value arg) {
 void BLOBVector::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
 
-    Napi::Function func = BaseVector::GetClass(env, exports, "NumberVector");
+    Napi::Function func = BaseVector::GetClass(env, exports, "BLOBVector");
 
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
