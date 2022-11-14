@@ -4,8 +4,16 @@ const Indi = require("../dist/binding.js");
 var colors = require("colors");
 
 // disconnect on SIGINT
-process.on("SIGINT", () => {
-  indi.disconnect();
+process.on("SIGINT", async () => {
+  console.log("disconnecting...");
+  try {
+    await indi.disconnect();
+    console.log("done");
+    process.exit(0);
+  } catch {
+    console.log("error");
+    process.exit(1);
+  }
 });
 
 function stateToEmoji(state) {
@@ -35,7 +43,10 @@ function displayValues(value, prefix) {
   }
 }
 
-const indi = new Indi.Client(process.argv[2] || "localhost");
+const indi = new Indi.Client(
+  process.argv[2] || "localhost",
+  parseInt(process.argv[3]) || 7624
+);
 
 indi
   .on("connected", (_) => console.log("[connected]".green))
