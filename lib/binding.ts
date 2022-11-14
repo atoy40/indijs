@@ -57,14 +57,15 @@ export enum BLOBHandling {
 
 export interface IndiDevice {
   getDeviceName(): string;
-  getProperty(name: string): IndiProperty<IndiVectors>;
-  getProperties(): Array<IndiProperty<IndiVectors>>;
+  getProperty(name: string): IndiProperty | undefined;
+  getProperties(): Array<IndiProperty>;
   getDriverInterface(): Number;
   messageQueue(id: number): string;
   connected: boolean;
 }
 
-export interface IndiProperty<T extends IndiVector> {
+export interface IndiProperty {
+  getRegistered(): boolean;
   getName(): string;
   getType(): PropertyType;
   getLabel(): string;
@@ -73,7 +74,12 @@ export interface IndiProperty<T extends IndiVector> {
   getTimestamp(): string;
   getState(): IndiState;
   getPermission(): IndiPerm;
-  getValue(): T;
+  getValue(): IndiVector | undefined;
+  getNumber(): IndiNumberVector | undefined;
+  getSwitch(): IndiSwitchVector | undefined;
+  getText(): IndiTextVector | undefined;
+  getLight(): IndiLightVector | undefined;
+  getBLOB(): IndiBLOBVector | undefined;
 }
 
 export interface IndiVector {
@@ -149,10 +155,7 @@ export declare interface Client {
   on(event: "disconnected", listener: (code: number) => void): this;
   on(event: "newDevice", listener: (device: IndiDevice) => void): this;
   on(event: "removeDevice", listener: (name: string) => void): this;
-  on(
-    event: "newProperty",
-    listener: (property: IndiProperty<IndiVectors>) => void
-  ): this;
+  on(event: "newProperty", listener: (property: IndiProperty) => void): this;
   on(
     event: "removeProperty",
     listener: (name: string, device: string) => void
@@ -166,7 +169,7 @@ export declare interface Client {
     listener: (device: IndiDevice, id: number) => void
   ): this;
   on(event: "newBLOB", listener: (blob: IndiBLOB) => void): this;
-  on(eventName: string | symbol, listener: (...args: any[]) => void): this
+  on(eventName: string | symbol, listener: (...args: any[]) => void): this;
 }
 
 interface IndiClientNative {
@@ -175,7 +178,7 @@ interface IndiClientNative {
   disconnect(): Promise<boolean>;
   connected: boolean;
   connectDevice(name: string): Promise<void>;
-  getDevice(name: string): IndiDevice;
+  getDevice(name: string): IndiDevice | undefined;
   getDevices(): Array<IndiDevice>;
   watchDevice(device: string): void;
   setBLOBMode(mode: BLOBHandling, device: string, prop: string): void;
@@ -256,68 +259,68 @@ export class Client extends EventEmitter {
   }
 
   sendNewNumber(
-    propsOrDevice: IndiProperty<IndiNumberVector> | string,
+    vectorOrDevice: IndiNumberVector | string,
     property?: string,
     element?: string,
     value?: number
   ) {
     if (
-      typeof propsOrDevice === "string" &&
+      typeof vectorOrDevice === "string" &&
       typeof property === "string" &&
       typeof element === "string" &&
       typeof value === "number"
     ) {
       return this._addonInstance.sendNewNumber(
-        propsOrDevice,
+        vectorOrDevice,
         property,
         element,
         value
       );
     } else {
-      return this._addonInstance.sendNewNumber(propsOrDevice);
+      return this._addonInstance.sendNewNumber(vectorOrDevice);
     }
   }
 
   sendNewSwitch(
-    propsOrDevice: IndiProperty<IndiSwitchVector> | string,
+    vectorOrDevice: IndiSwitchVector | string,
     property?: string,
     element?: string
   ) {
     if (
-      typeof propsOrDevice === "string" &&
+      typeof vectorOrDevice === "string" &&
       typeof property === "string" &&
       typeof element === "string"
     ) {
       return this._addonInstance.sendNewSwitch(
-        propsOrDevice,
+        vectorOrDevice,
         property,
         element
       );
     } else {
-      return this._addonInstance.sendNewSwitch(propsOrDevice);
+      return this._addonInstance.sendNewSwitch(vectorOrDevice);
     }
   }
 
   sendNewText(
-    propsOrDevice: IndiProperty<IndiTextVector> | string,
+    vectorOrDevice: IndiTextVector | string,
     property?: string,
     element?: string,
     value?: string
   ) {
     if (
-      typeof propsOrDevice === "string" &&
+      typeof vectorOrDevice === "string" &&
       typeof property === "string" &&
       typeof element === "string" &&
       typeof value === "string"
     ) {
       return this._addonInstance.sendNewText(
-        propsOrDevice,
+        vectorOrDevice,
         property,
         element,
         value
       );
     } else {
-      return this._addonInstance.sendNewText(propsOrDevice);
+      return this._addonInstance.sendNewText(vectorOrDevice);
     }
   }
 }

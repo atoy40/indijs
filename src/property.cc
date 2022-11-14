@@ -17,6 +17,11 @@ Property::Property(const Napi::CallbackInfo& info) : ObjectWrap(info) {
     _property = info[0].As<Napi::External<INDI::Property>>().Data();
 }
 
+Napi::Value Property::GetRegistered(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    return Napi::Boolean::New(env, _property->getRegistered());
+}
+
 Napi::Value Property::GetName(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     return Napi::String::New(env, _property->getName());
@@ -129,11 +134,102 @@ Napi::Value Property::GetValue(const Napi::CallbackInfo& info) {
     return env.Undefined();
 }
 
+Napi::Value Property::GetNumber(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    if (info.Length() > 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    auto value = _property->getNumber();
+
+    if (value != nullptr) {
+        return NumberVector::NewInstance(
+            Napi::External<INumberVectorProperty>::New(env, value));
+    }
+
+    return env.Undefined();
+}
+
+Napi::Value Property::GetSwitch(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    if (info.Length() > 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    auto value = _property->getSwitch();
+
+    if (value != nullptr) {
+        return SwitchVector::NewInstance(
+            Napi::External<ISwitchVectorProperty>::New(env, value));
+    }
+
+    return env.Undefined();
+}
+
+Napi::Value Property::GetText(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    if (info.Length() > 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    auto value = _property->getText();
+
+    if (value != nullptr) {
+        return TextVector::NewInstance(
+            Napi::External<ITextVectorProperty>::New(env, value));
+    }
+
+    return env.Undefined();
+}
+
+Napi::Value Property::GetLight(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    if (info.Length() > 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    auto value = _property->getLight();
+
+    if (value != nullptr) {
+        return LightVector::NewInstance(
+            Napi::External<ILightVectorProperty>::New(env, value));
+    }
+
+    return env.Undefined();
+}
+
+Napi::Value Property::GetBLOB(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    if (info.Length() > 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    auto value = _property->getBLOB();
+
+    if (value != nullptr) {
+        return BLOBVector::NewInstance(
+            Napi::External<IBLOBVectorProperty>::New(env, value));
+    }
+
+    return env.Undefined();
+}
+
 void Property::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
 
     Napi::Function func = DefineClass(env, "Property",
         {
+            Property::InstanceMethod("getRegistered", &Property::GetRegistered),
             Property::InstanceMethod("getName", &Property::GetName),
             Property::InstanceMethod("getType", &Property::GetType),
             Property::InstanceMethod("getLabel", &Property::GetLabel),
@@ -143,6 +239,11 @@ void Property::GetClass(Napi::Env env, Napi::Object exports) {
             Property::InstanceMethod("getState", &Property::GetState),
             Property::InstanceMethod("getPermission", &Property::GetPermission),
             Property::InstanceMethod("getValue", &Property::GetValue),
+            Property::InstanceMethod("getNumber", &Property::GetNumber),
+            Property::InstanceMethod("getSwitch", &Property::GetSwitch),
+            Property::InstanceMethod("getText", &Property::GetText),
+            Property::InstanceMethod("getLight", &Property::GetLight),
+            Property::InstanceMethod("getBLOB", &Property::GetBLOB),
         });
 
     constructor = Napi::Persistent(func);

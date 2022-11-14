@@ -1,6 +1,6 @@
 const Indi = require("@atoy40/indijs");
 
-const indi = new Indi.Client(process.argv[2] || "localhost");
+const indi = new Indi.Client(process.argv[2] || "localhost", 7626);
 indi
   .on("connected", function () {
     console.log("INDI Connected");
