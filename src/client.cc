@@ -149,7 +149,14 @@ Napi::Value IndiClient::SetBLOBMode(const Napi::CallbackInfo& info) {
         return env.Null();
     }
 
-    setBLOBMode((BLOBHandling)info[0].As<Napi::Number>().Uint32Value(), info[1].As<Napi::String>().Utf8Value().c_str());
+    if (info.Length() == 3) {
+        setBLOBMode((BLOBHandling)info[0].As<Napi::Number>().Uint32Value(),
+            info[1].As<Napi::String>().Utf8Value().c_str(),
+            info[2].As<Napi::String>().Utf8Value().c_str());
+    } else {
+        setBLOBMode((BLOBHandling)info[0].As<Napi::Number>().Uint32Value(),
+            info[1].As<Napi::String>().Utf8Value().c_str());
+    }
 
     return info.Env().Undefined();
 }
