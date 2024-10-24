@@ -56,68 +56,53 @@ export enum BLOBHandling {
 }
 
 export interface IndiDevice {
+  isValid(): boolean;
   getDeviceName(): string;
   getProperty(name: string): IndiProperty | undefined;
   getProperties(): Array<IndiProperty>;
   getDriverInterface(): Number;
   messageQueue(id: number): string;
+  watchProperty(name: string, cb: (prop: IndiProperty) => void): void;
   connected: boolean;
 }
 
 export interface IndiProperty {
+  getBaseDevice(): IndiDevice;
   getRegistered(): boolean;
   getName(): string;
   getType(): PropertyType;
+  getTypeAsString(): string;
   getLabel(): string;
   getGroupName(): string;
   getDeviceName(): string;
   getTimestamp(): string;
   getState(): IndiState;
+  getStateAsString(): string;
   getPermission(): IndiPerm;
-  getValue(): IndiVector | undefined;
-  getNumber(): IndiNumberVector | undefined;
-  getSwitch(): IndiSwitchVector | undefined;
-  getText(): IndiTextVector | undefined;
-  getLight(): IndiLightVector | undefined;
-  getBLOB(): IndiBLOBVector | undefined;
+  getPermissionAsString(): string;
+  count(): number;
 }
 
-export interface IndiVector {
-  name: string;
-  label: string;
-  group: string;
-  device: string;
-  state: IndiState;
-  permission: IndiPerm;
+export interface IndiPropertyNumber extends IndiProperty {
+  getValues(): IndiNumber[];
 }
 
-export interface IndiNumberVector extends IndiVector {
-  values: Array<IndiNumber>;
+export interface IndiPropertySwitch extends IndiProperty {
+  getValues(): IndiSwitch[];
+  getRule(): IndiRule;
+  getRuleAsString(): string;
+  findOnSwitchIndex(): number;
+  findOnSwitchName(): string;
+  findOnSwitch(): IndiSwitch | undefined;
 }
 
-export interface IndiSwitchVector extends IndiVector {
-  rule: IndiRule;
-  values: Array<IndiSwitch>;
+export interface IndiPropertyText extends IndiProperty {
+  getValues(): IndiText[];
 }
 
-export interface IndiTextVector extends IndiVector {
-  values: Array<IndiText>;
+export interface IndiPropertyLight extends IndiProperty {
+  getValues(): IndiLight[];
 }
-
-export interface IndiLightVector extends IndiVector {
-  values: Array<IndiLight>;
-}
-
-export interface IndiBLOBVector extends IndiVector {
-  values: Array<IndiBLOB>;
-}
-
-export type IndiVectors =
-  | IndiNumberVector
-  | IndiSwitchVector
-  | IndiTextVector
-  | IndiLightVector
-  | IndiBLOBVector;
 
 export interface IndiValue<T> {
   name: string;
@@ -130,24 +115,16 @@ export interface IndiNumber extends IndiValue<number> {
   max: number;
   step: number;
   formated: string;
-  getVector(): IndiNumberVector;
 }
 
-export interface IndiSwitch extends IndiValue<boolean> {
-  getVector(): IndiNumberVector;
-}
+export interface IndiSwitch extends IndiValue<boolean> {}
 
-export interface IndiText extends IndiValue<string> {
-  getVector(): IndiTextVector;
-}
+export interface IndiText extends IndiValue<string> {}
 
-export interface IndiLight extends IndiValue<IndiState> {
-  getVector(): IndiLightVector;
-}
+export interface IndiLight extends IndiValue<IndiState> {}
 
 export interface IndiBLOB extends IndiValue<Buffer> {
   format: string;
-  getVector(): IndiBLOBVector;
 }
 
 export declare interface Client {
@@ -155,28 +132,32 @@ export declare interface Client {
   on(event: "disconnected", listener: (code: number) => void): this;
   on(event: "newDevice", listener: (device: IndiDevice) => void): this;
   on(event: "removeDevice", listener: (name: string) => void): this;
-  on(event: "newProperty", listener: (property: IndiProperty) => void): this;
+  on(
+    event: "newProperty",
+    listener: (property: IndiProperty) => void
+  ): this;
+  on(
+    event: "updateProperty",
+    listener: (property: IndiProperty) => void
+  ): this;
   on(
     event: "removeProperty",
     listener: (name: string, device: string) => void
   ): this;
-  on(event: "newNumber", listener: (number: IndiNumberVector) => void): this;
-  on(event: "newSwitch", listener: (sw: IndiSwitchVector) => void): this;
-  on(event: "newText", listener: (text: IndiTextVector) => void): this;
-  on(event: "newLight", listener: (light: IndiLightVector) => void): this;
   on(
     event: "newMessage",
     listener: (device: IndiDevice, id: number) => void
   ): this;
-  on(event: "newBLOB", listener: (blob: IndiBLOB) => void): this;
   on(eventName: string | symbol, listener: (...args: any[]) => void): this;
 }
 
 interface IndiClientNative {
+  host: string;
+  port: number;
+  connected: boolean;
   setServer(hostname: string, port: number): void;
   connect(): Promise<boolean>;
   disconnect(): Promise<boolean>;
-  connected: boolean;
   connectDevice(name: string): Promise<void>;
   getDevice(name: string): IndiDevice | undefined;
   getDevices(): Array<IndiDevice>;
@@ -230,7 +211,15 @@ export class Client extends EventEmitter {
     return this._addonInstance.disconnect();
   }
 
-  get connected(): boolean {
+  get host() {
+    return this._addonInstance.host;
+  }
+
+  get port() {
+    return this._addonInstance.port;
+  }
+
+  get connected() {
     return this._addonInstance.connected;
   }
 
@@ -259,68 +248,64 @@ export class Client extends EventEmitter {
   }
 
   sendNewNumber(
-    vectorOrDevice: IndiNumberVector | string,
+    propOrDevice: IndiPropertyNumber | string,
     property?: string,
     element?: string,
     value?: number
   ) {
     if (
-      typeof vectorOrDevice === "string" &&
+      typeof propOrDevice === "string" &&
       typeof property === "string" &&
       typeof element === "string" &&
       typeof value === "number"
     ) {
       return this._addonInstance.sendNewNumber(
-        vectorOrDevice,
+        propOrDevice,
         property,
         element,
         value
       );
     } else {
-      return this._addonInstance.sendNewNumber(vectorOrDevice);
+      return this._addonInstance.sendNewNumber(propOrDevice);
     }
   }
 
   sendNewSwitch(
-    vectorOrDevice: IndiSwitchVector | string,
+    propOrDevice: IndiPropertySwitch | string,
     property?: string,
     element?: string
   ) {
     if (
-      typeof vectorOrDevice === "string" &&
+      typeof propOrDevice === "string" &&
       typeof property === "string" &&
       typeof element === "string"
     ) {
-      return this._addonInstance.sendNewSwitch(
-        vectorOrDevice,
-        property,
-        element
-      );
+      return this._addonInstance.sendNewSwitch(propOrDevice, property, element);
     } else {
-      return this._addonInstance.sendNewSwitch(vectorOrDevice);
+      return this._addonInstance.sendNewSwitch(propOrDevice);
     }
   }
 
   sendNewText(
-    vectorOrDevice: IndiTextVector | string,
+    propOrDevice: IndiPropertyText | string,
     property?: string,
     element?: string,
     value?: string
   ) {
     if (
-      typeof vectorOrDevice === "string" &&
+      typeof propOrDevice === "string" &&
       typeof property === "string" &&
       typeof element === "string" &&
       typeof value === "string"
     ) {
       return this._addonInstance.sendNewText(
-        vectorOrDevice,
+        propOrDevice,
         property,
         element,
         value
       );
     } else {
-      return this._addonInstance.sendNewText(vectorOrDevice);
+      return this._addonInstance.sendNewText(propOrDevice);
     }
   }
 }

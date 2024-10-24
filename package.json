@@ -1,4 +1,9 @@
 {
+  "name": "@astraw/indijs",
+  "version": "0.0.16",
+  "author": "Anthony Hinsinger <anthony.hinsinger@gmail.com>",
+  "license": "ISC",
+  "description": "INDI nodejs wrapper",
   "main": "dist/binding.js",
   "bin": {
     "indijs-cli": "./bin/indijs-cli.js"
@@ -16,14 +21,9 @@
     "build": "tsc && node-gyp build"
   },
   "gypfile": true,
-  "name": "@atoy40/indijs",
-  "version": "0.0.15",
-  "author": "Anthony Hinsinger <anthony.hinsinger@gmail.com>",
-  "license": "ISC",
-  "description": "INDI nodejs wrapper",
   "repository": {
     "type": "git",
-    "url": "https://github.com/atoy40/indijs"
+    "url": "https://github.com/AST-RAW/indijs"
   },
   "devDependencies": {
     "@types/node": "^14.18.33",

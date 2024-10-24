@@ -19,7 +19,6 @@ class BaseValue : public Napi::ObjectWrap<T> {
     Napi::Value GetVector(const Napi::CallbackInfo& info);
 
     virtual Napi::Value getValue(const Napi::Env& env) = 0;
-    virtual Napi::Value getVector(const Napi::Env& env) = 0;
     virtual void setValue(const Napi::Env& env, const Napi::Value& value) = 0;
     virtual void setProps(Napi::Object& object) = 0;
 
@@ -48,7 +47,6 @@ class NumberValue : public BaseValue<NumberValue, INumber> {
     Napi::Value GetStep(const Napi::CallbackInfo& info);
     Napi::Value GetFormated(const Napi::CallbackInfo& info);
 
-    Napi::Value getVector(const Napi::Env& env);
     Napi::Value getValue(const Napi::Env& env) {
         return Napi::Number::New(env, getHandle()->value);
     }
@@ -74,7 +72,6 @@ class SwitchValue : public BaseValue<SwitchValue, ISwitch> {
     static void GetClass(Napi::Env, Napi::Object);
     static Napi::Object NewInstance(Napi::Value);
 
-    Napi::Value getVector(const Napi::Env& env);
     Napi::Value getValue(const Napi::Env& env) {
         return Napi::Boolean::New(env, getHandle()->s);
     }
@@ -100,7 +97,6 @@ class TextValue : public BaseValue<TextValue, IText> {
         return Napi::String::New(env, getHandle()->text);
     }
 
-    Napi::Value getVector(const Napi::Env& env);
     void setValue(const Napi::Env& env, const Napi::Value& value) {
         getHandle()->text = strcpy(getHandle()->text, value.As<Napi::String>().Utf8Value().c_str());
     }
@@ -118,7 +114,6 @@ class LightValue : public BaseValue<LightValue, ILight> {
     static void GetClass(Napi::Env, Napi::Object);
     static Napi::Object NewInstance(Napi::Value);
 
-    Napi::Value getVector(const Napi::Env& env);
     Napi::Value getValue(const Napi::Env& env) {
         return Napi::Number::New(env, getHandle()->s);
     }
@@ -141,14 +136,16 @@ class BLOBValue : public BaseValue<BLOBValue, IBLOB> {
     static Napi::Object NewInstance(Napi::Value);
     Napi::Value GetFormat(const Napi::CallbackInfo& info);
 
-    Napi::Value getVector(const Napi::Env& env);
     Napi::Value getValue(const Napi::Env& env) {
-        return Napi::Buffer<char>::Copy(env, static_cast<char*>(getHandle()->blob), getHandle()->bloblen);
+        return Napi::Buffer<char>::Copy(
+            env, static_cast<char*>(getHandle()->blob), getHandle()->bloblen);
     }
 
     void setValue(const Napi::Env& env, const Napi::Value& value) {}
 
-    void setProps(Napi::Object& object) {}
+    void setProps(Napi::Object& object) {
+        object.Set("format", getHandle()->format);
+    }
 
   private:
     static Napi::FunctionReference constructor;

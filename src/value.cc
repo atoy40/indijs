@@ -1,6 +1,5 @@
 
 #include "value.h"
-#include "vector.h"
 #include <libindi/indicom.h>
 
 // base value
@@ -59,11 +58,6 @@ void BaseValue<T, V>::SetValue(const Napi::CallbackInfo& info, const Napi::Value
 }
 
 template<typename T, typename V>
-Napi::Value BaseValue<T, V>::GetVector(const Napi::CallbackInfo& info) {
-    return getVector(info.Env());
-}
-
-template<typename T, typename V>
 Napi::Function BaseValue<T, V>::GetClass(Napi::Env env, Napi::Object exports, const char* name) {
     std::vector<Napi::ClassPropertyDescriptor<T>> properties;
     return GetClass(env, exports, name, properties);
@@ -87,7 +81,6 @@ Napi::Function BaseValue<T, V>::GetClass(Napi::Env env, Napi::Object exports, co
         BaseValue::InstanceAccessor("label", &BaseValue::GetLabel, &BaseValue::SetLabel));
     properties.push_back(
         BaseValue::InstanceAccessor("value", &BaseValue::GetValue, &BaseValue::SetValue));
-    properties.push_back(BaseValue::InstanceMethod("getVector", &BaseValue::GetVector));
 
     Napi::Function func = BaseValue::DefineClass(env, name, properties);
 
@@ -118,11 +111,6 @@ Napi::Value NumberValue::GetFormated(const Napi::CallbackInfo& info) {
     return Napi::String::New(info.Env(), buf);
 }
 
-Napi::Value NumberValue::getVector(const Napi::Env& env) {
-    return NumberVector::NewInstance(
-        Napi::External<INumberVectorProperty>::New(env, getHandle()->nvp));
-}
-
 void NumberValue::GetClass(Napi::Env env, Napi::Object exports) {
     // Napi::HandleScope scope(env);
 
@@ -149,11 +137,6 @@ SwitchValue::SwitchValue(const Napi::CallbackInfo& info) : BaseValue(info) {}
 
 Napi::FunctionReference SwitchValue::constructor;
 
-Napi::Value SwitchValue::getVector(const Napi::Env& env) {
-    return SwitchVector::NewInstance(
-        Napi::External<ISwitchVectorProperty>::New(env, getHandle()->svp));
-}
-
 void SwitchValue::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
 
@@ -172,10 +155,6 @@ Napi::Object SwitchValue::NewInstance(Napi::Value arg) {
 TextValue::TextValue(const Napi::CallbackInfo& info) : BaseValue(info) {}
 
 Napi::FunctionReference TextValue::constructor;
-
-Napi::Value TextValue::getVector(const Napi::Env& env) {
-    return TextVector::NewInstance(Napi::External<ITextVectorProperty>::New(env, getHandle()->tvp));
-}
 
 void TextValue::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
@@ -196,11 +175,6 @@ LightValue::LightValue(const Napi::CallbackInfo& info) : BaseValue(info) {}
 
 Napi::FunctionReference LightValue::constructor;
 
-Napi::Value LightValue::getVector(const Napi::Env& env) {
-    return LightVector::NewInstance(
-        Napi::External<ILightVectorProperty>::New(env, getHandle()->lvp));
-}
-
 void LightValue::GetClass(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
 
@@ -219,10 +193,6 @@ Napi::Object LightValue::NewInstance(Napi::Value arg) {
 BLOBValue::BLOBValue(const Napi::CallbackInfo& info) : BaseValue(info) {}
 
 Napi::FunctionReference BLOBValue::constructor;
-
-Napi::Value BLOBValue::getVector(const Napi::Env& env) {
-    return BLOBVector::NewInstance(Napi::External<IBLOBVectorProperty>::New(env, getHandle()->bvp));
-}
 
 Napi::Value BLOBValue::GetFormat(const Napi::CallbackInfo& info) {
     return Napi::String::New(info.Env(), getHandle()->format);

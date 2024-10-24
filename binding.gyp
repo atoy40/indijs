@@ -2,11 +2,11 @@
   'targets': [
     {
       'target_name': 'indi-native',
-      'sources': [ 'src/indi.cc', 'src/client.cc', 'src/device.cc', 'src/property.cc', 'src/value.cc', 'src/vector.cc', 'src/promise.cc' ],
+      'sources': [ 'src/indi.cc', 'src/client.cc', 'src/device.cc', 'src/value.cc', 'src/promise.cc', 'src/prop.cc' ],
       'include_dirs': ["<!@(node -p \"require('node-addon-api').include\")"],
       'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
-      'cflags!': [ '-fno-exceptions' ],
-      'cflags_cc!': [ '-fno-exceptions' ],
+      'cflags!': [ '-fno-exceptions', '-DDEBUG' ],
+      'cflags_cc!': [ '-fno-exceptions', '-DDEBUG' ],
       'libraries': [
         '-lindiclient',
       ],

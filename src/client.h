@@ -2,7 +2,6 @@
 
 #include "device.h"
 #include "promise.h"
-#include "vector.h"
 #include <iostream>
 #include <libindi/baseclient.h>
 #include <libindi/basedevice.h>
@@ -13,6 +12,8 @@ class IndiClient : public Napi::ObjectWrap<IndiClient>, public INDI::BaseClient 
     IndiClient(const Napi::CallbackInfo&);
 
     Napi::Value SetServer(const Napi::CallbackInfo&);
+    Napi::Value GetHost(const Napi::CallbackInfo&);
+    Napi::Value GetPort(const Napi::CallbackInfo&);
     Napi::Value Connect(const Napi::CallbackInfo&);
     Napi::Value Disconnect(const Napi::CallbackInfo&);
     Napi::Value IsConnected(const Napi::CallbackInfo&);
@@ -42,18 +43,19 @@ class IndiClient : public Napi::ObjectWrap<IndiClient>, public INDI::BaseClient 
     class SendNewTextWorker;
 
     // INDI::BaseClient implementation.
-    void newDevice(INDI::BaseDevice* dp);
-    void newProperty(INDI::Property* property);
-    void newSwitch(ISwitchVectorProperty* svp);
+    void serverConnected() override;
+    void serverDisconnected(int exit_code) override;
+    void newDevice(INDI::BaseDevice device) override;
+    void newProperty(INDI::Property property) override;
+    void updateProperty(INDI::Property property) override;
+    void removeDevice(INDI::BaseDevice device) override;
+    void removeProperty(INDI::Property property) override;
+    void newMessage(INDI::BaseDevice device, int messageID) override;
+    /*void newSwitch(ISwitchVectorProperty* svp);
     void newNumber(INumberVectorProperty* nvp);
     void newText(ITextVectorProperty* tvp);
     void newLight(ILightVectorProperty* lvp);
-    void serverConnected();
-    void serverDisconnected(int exit_code);
-    void removeDevice(INDI::BaseDevice* dp);
-    void removeProperty(INDI::Property* property);
-    void newBLOB(IBLOB* bp);
-    void newMessage(INDI::BaseDevice* dp, int messageID);
+    void newBLOB(IBLOB* bp);*/
 
     Napi::ThreadSafeFunction _tsfn;
     static Napi::FunctionReference constructor;
@@ -61,7 +63,7 @@ class IndiClient : public Napi::ObjectWrap<IndiClient>, public INDI::BaseClient 
 
 class IndiClient::ConnectWorker : public PromiseWorker {
   public:
-    ConnectWorker(Napi::Env env, IndiClient* client) : PromiseWorker(env), _client(client){};
+    ConnectWorker(Napi::Env env, IndiClient* client) : PromiseWorker(env), _client(client) {};
 
     void Execute();
     Napi::Value GetResolve();
@@ -74,7 +76,7 @@ class IndiClient::ConnectWorker : public PromiseWorker {
 
 class IndiClient::DisconnectWorker : public PromiseWorker {
   public:
-    DisconnectWorker(Napi::Env env, IndiClient* client) : PromiseWorker(env), _client(client){};
+    DisconnectWorker(Napi::Env env, IndiClient* client) : PromiseWorker(env), _client(client) {};
 
     void Execute();
     Napi::Value GetResolve();
@@ -88,7 +90,7 @@ class IndiClient::DisconnectWorker : public PromiseWorker {
 class IndiClient::ConnectDeviceWorker : public PromiseWorker {
   public:
     ConnectDeviceWorker(Napi::Env env, INDI::BaseClient* client, std::string devname)
-        : PromiseWorker(env), _client(client), _devname(devname){};
+        : PromiseWorker(env), _client(client), _devname(devname) {};
     void Execute();
 
   private:
@@ -99,13 +101,12 @@ class IndiClient::ConnectDeviceWorker : public PromiseWorker {
 template<typename V>
 class SendNewValueWorker : public Napi::AsyncWorker {
   public:
-    SendNewValueWorker(
-        Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client, V* vector)
-        : Napi::AsyncWorker(env), _deferred(deferred), _client(client), _vector(vector){};
-    SendNewValueWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client,
-        std::string device, std::string property, std::string element)
-        : Napi::AsyncWorker(env), _deferred(deferred), _client(client), _vector(nullptr),
-          _device(device), _property(property), _element(element){};
+    SendNewValueWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client, INDI::Property prop)
+        : Napi::AsyncWorker(env), _deferred(deferred), _client(client), _prop(prop) {};
+    SendNewValueWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client, std::string device,
+        std::string property, std::string element)
+        : Napi::AsyncWorker(env), _deferred(deferred), _client(client), _device(device), _property(property),
+          _element(element) {};
 
     void OnOK() {
         Napi::HandleScope scope(Env());
@@ -119,7 +120,7 @@ class SendNewValueWorker : public Napi::AsyncWorker {
   protected:
     Napi::Promise::Deferred _deferred;
     INDI::BaseClient* _client;
-    V* _vector;
+    INDI::Property _prop;
     std::string _device;
     std::string _property;
     std::string _element;
@@ -127,16 +128,16 @@ class SendNewValueWorker : public Napi::AsyncWorker {
 
 class IndiClient::SendNewNumberWorker : public SendNewValueWorker<INumberVectorProperty> {
   public:
-    SendNewNumberWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client,
-        INumberVectorProperty* vector)
-        : SendNewValueWorker(env, deferred, client, vector){};
-    SendNewNumberWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client,
-        std::string device, std::string property, std::string element, double value)
-        : SendNewValueWorker(env, deferred, client, device, property, element), _value(value){};
+    SendNewNumberWorker(
+        Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client, INDI::Property prop)
+        : SendNewValueWorker(env, deferred, client, prop) {};
+    SendNewNumberWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client, std::string device,
+        std::string property, std::string element, double value)
+        : SendNewValueWorker(env, deferred, client, device, property, element), _value(value) {};
 
     void Execute() {
-        if (_vector != nullptr) {
-            _client->sendNewNumber(_vector);
+        if (!_prop.isEmpty()) {
+            _client->sendNewNumber(_prop);
         } else {
             _client->sendNewNumber(_device.c_str(), _property.c_str(), _element.c_str(), _value);
         }
@@ -148,16 +149,16 @@ class IndiClient::SendNewNumberWorker : public SendNewValueWorker<INumberVectorP
 
 class IndiClient::SendNewSwitchWorker : public SendNewValueWorker<ISwitchVectorProperty> {
   public:
-    SendNewSwitchWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client,
-        ISwitchVectorProperty* vector)
-        : SendNewValueWorker(env, deferred, client, vector) {}
-    SendNewSwitchWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client,
-        std::string device, std::string property, std::string element)
+    SendNewSwitchWorker(
+        Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client, INDI::Property prop)
+        : SendNewValueWorker(env, deferred, client, prop) {}
+    SendNewSwitchWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client, std::string device,
+        std::string property, std::string element)
         : SendNewValueWorker(env, deferred, client, device, property, element) {}
 
     void Execute() {
-        if (_vector != nullptr) {
-            _client->sendNewSwitch(_vector);
+        if (!_prop.isEmpty()) {
+            _client->sendNewSwitch(_prop);
         } else {
             _client->sendNewSwitch(_device.c_str(), _property.c_str(), _element.c_str());
         }
@@ -168,16 +169,16 @@ class IndiClient::SendNewSwitchWorker : public SendNewValueWorker<ISwitchVectorP
 
 class IndiClient::SendNewTextWorker : public SendNewValueWorker<ITextVectorProperty> {
   public:
-    SendNewTextWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client,
-        ITextVectorProperty* vector)
-        : SendNewValueWorker(env, deferred, client, vector) {}
-    SendNewTextWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client,
-        std::string device, std::string property, std::string element, std::string value)
+    SendNewTextWorker(
+        Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client, INDI::Property prop)
+        : SendNewValueWorker(env, deferred, client, prop) {}
+    SendNewTextWorker(Napi::Env env, Napi::Promise::Deferred& deferred, INDI::BaseClient* client, std::string device,
+        std::string property, std::string element, std::string value)
         : SendNewValueWorker(env, deferred, client, device, property, element), _value(value) {}
 
     void Execute() {
-        if (_vector != nullptr) {
-            _client->sendNewText(_vector);
+        if (!_prop.isEmpty()) {
+            _client->sendNewText(_prop);
         } else {
             _client->sendNewText(_device.c_str(), _property.c_str(), _element.c_str(), _value.c_str());
         }

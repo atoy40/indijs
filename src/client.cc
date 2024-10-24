@@ -1,7 +1,6 @@
 #include "client.h"
 #include "promise.h"
-#include "property.h"
-#include "vector.h"
+#include "prop.h"
 
 #ifdef DEBUG
 #define log(msg) std::cout << msg << std::endl;
@@ -20,8 +19,7 @@ IndiClient::IndiClient(const Napi::CallbackInfo& info) : ObjectWrap(info) {
     }
 
     if (!info[0].IsString()) {
-        Napi::TypeError::New(env, "You need to set the server hostname")
-            .ThrowAsJavaScriptException();
+        Napi::TypeError::New(env, "You need to set the server hostname").ThrowAsJavaScriptException();
         return;
     }
 
@@ -35,15 +33,12 @@ IndiClient::IndiClient(const Napi::CallbackInfo& info) : ObjectWrap(info) {
         return;
     }
 
-    _tsfn = Napi::ThreadSafeFunction::New(env,
-        info[2].As<Napi::Function>(), // JavaScript function called asynchronously
-        "Resource Name", // Name
+    _tsfn = Napi::ThreadSafeFunction::New(env, info[2].As<Napi::Function>(), "indi thread",
         1, // one callback in the queue to avoid multiple dev/prop removes in the same loop
         1 // Only one thread will use this initially
     );
 
-    setServer(
-        info[0].As<Napi::String>().Utf8Value().c_str(), info[1].As<Napi::Number>().Uint32Value());
+    setServer(info[0].As<Napi::String>().Utf8Value().c_str(), info[1].As<Napi::Number>().Uint32Value());
 }
 
 Napi::Value IndiClient::SetServer(const Napi::CallbackInfo& info) {
@@ -67,6 +62,18 @@ Napi::Value IndiClient::SetServer(const Napi::CallbackInfo& info) {
     setServer(info[0].As<Napi::String>().Utf8Value().c_str(), info[1].As<Napi::Number>().Uint32Value());
 
     return info.Env().Undefined();
+}
+
+Napi::Value IndiClient::GetHost(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    return Napi::String::New(env, getHost());
+}
+
+Napi::Value IndiClient::GetPort(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    return Napi::Number::New(env, getPort());
 }
 
 Napi::Value IndiClient::Connect(const Napi::CallbackInfo& info) {
@@ -151,11 +158,10 @@ Napi::Value IndiClient::SetBLOBMode(const Napi::CallbackInfo& info) {
 
     if (info.Length() == 3) {
         setBLOBMode((BLOBHandling)info[0].As<Napi::Number>().Uint32Value(),
-            info[1].As<Napi::String>().Utf8Value().c_str(),
-            info[2].As<Napi::String>().Utf8Value().c_str());
+            info[1].As<Napi::String>().Utf8Value().c_str(), info[2].As<Napi::String>().Utf8Value().c_str());
     } else {
-        setBLOBMode((BLOBHandling)info[0].As<Napi::Number>().Uint32Value(),
-            info[1].As<Napi::String>().Utf8Value().c_str());
+        setBLOBMode(
+            (BLOBHandling)info[0].As<Napi::Number>().Uint32Value(), info[1].As<Napi::String>().Utf8Value().c_str());
     }
 
     return info.Env().Undefined();
@@ -174,10 +180,11 @@ Napi::Value IndiClient::GetDevice(const Napi::CallbackInfo& info) {
         return env.Null();
     }
 
-    INDI::BaseDevice* dp = getDevice(info[0].As<Napi::String>().Utf8Value().c_str());
+    INDI::BaseDevice dp = getDevice(info[0].As<Napi::String>().Utf8Value().c_str());
 
     if (dp) {
-        return Device::NewInstance(Napi::External<INDI::BaseDevice>::New(env, dp));
+        return Device::NewInstance(Napi::External<INDI::BaseDevice>::New(
+            env, new INDI::BaseDevice(dp), [](Napi::Env env, INDI::BaseDevice* dp) { delete dp; }));
     }
 
     return info.Env().Undefined();
@@ -191,7 +198,7 @@ Napi::Value IndiClient::GetDevices(const Napi::CallbackInfo& info) {
         return env.Null();
     }
 
-    std::vector<INDI::BaseDevice*> devices = getDevices();
+    std::vector<INDI::BaseDevice> devices = getDevices();
 
     Napi::Array array = Napi::Array::New(env);
 
@@ -199,8 +206,10 @@ Napi::Value IndiClient::GetDevices(const Napi::CallbackInfo& info) {
         return array;
     }
 
-    for (unsigned int i = 0; i < devices.size(); i++) {
-        array.Set(i, Device::NewInstance(Napi::External<INDI::BaseDevice>::New(env, devices[i])));
+    for (auto itr = devices.begin(); itr != devices.end(); itr++) {
+        array.Set(std::distance(devices.begin(), itr),
+            Device::NewInstance(Napi::External<INDI::BaseDevice>::New(
+                env, new INDI::BaseDevice(*itr), [](Napi::Env env, INDI::BaseDevice* dp) { delete dp; })));
     }
 
     return array;
@@ -219,8 +228,7 @@ Napi::Value IndiClient::ConnectDevice(const Napi::CallbackInfo& info) {
         return env.Null();
     }
 
-    ConnectDeviceWorker* wk =
-        new ConnectDeviceWorker(env, this, info[0].As<Napi::String>().Utf8Value());
+    ConnectDeviceWorker* wk = new ConnectDeviceWorker(env, this, info[0].As<Napi::String>().Utf8Value());
     wk->Queue();
 
     return wk->Deferred().Promise();
@@ -233,28 +241,24 @@ Napi::Value IndiClient::SendNewNumber(const Napi::CallbackInfo& info) {
 
     if (info.Length() == 1 && info[0].IsObject()) {
         if (!info[0].IsObject()) {
-            Napi::TypeError::New(env, "You need to provide a property object")
-                .ThrowAsJavaScriptException();
+            Napi::TypeError::New(env, "You need to provide a property object").ThrowAsJavaScriptException();
             return env.Null();
         }
-        NumberVector* sv = Napi::ObjectWrap<NumberVector>::Unwrap(info[0].As<Napi::Object>());
-        wk = new SendNewNumberWorker(env, deferred, this, sv->getHandle());
+        PropertyNumber* sv = Napi::ObjectWrap<PropertyNumber>::Unwrap(info[0].As<Napi::Object>());
+        wk = new SendNewNumberWorker(env, deferred, this, sv->getProperty());
     } else if (info.Length() == 4) {
         if (!info[0].IsString()) {
-            Napi::TypeError::New(env, "You need to provide a device name")
-                .ThrowAsJavaScriptException();
+            Napi::TypeError::New(env, "You need to provide a device name").ThrowAsJavaScriptException();
             return env.Null();
         }
 
         if (!info[1].IsString()) {
-            Napi::TypeError::New(env, "You need to provide a property name")
-                .ThrowAsJavaScriptException();
+            Napi::TypeError::New(env, "You need to provide a property name").ThrowAsJavaScriptException();
             return env.Null();
         }
 
         if (!info[2].IsString()) {
-            Napi::TypeError::New(env, "You need to provide an element name")
-                .ThrowAsJavaScriptException();
+            Napi::TypeError::New(env, "You need to provide an element name").ThrowAsJavaScriptException();
             return env.Null();
         }
 
@@ -282,28 +286,24 @@ Napi::Value IndiClient::SendNewSwitch(const Napi::CallbackInfo& info) {
 
     if (info.Length() == 1 && info[0].IsObject()) {
         if (!info[0].IsObject()) {
-            Napi::TypeError::New(env, "You need to provide a property object")
-                .ThrowAsJavaScriptException();
+            Napi::TypeError::New(env, "You need to provide a property object").ThrowAsJavaScriptException();
             return env.Null();
         }
-        SwitchVector* sv = Napi::ObjectWrap<SwitchVector>::Unwrap(info[0].As<Napi::Object>());
-        wk = new SendNewSwitchWorker(env, deferred, this, sv->getHandle());
+        PropertySwitch* sv = Napi::ObjectWrap<PropertySwitch>::Unwrap(info[0].As<Napi::Object>());
+        wk = new SendNewSwitchWorker(env, deferred, this, sv->getProperty());
     } else if (info.Length() == 3) {
         if (!info[0].IsString()) {
-            Napi::TypeError::New(env, "You need to provide a device name")
-                .ThrowAsJavaScriptException();
+            Napi::TypeError::New(env, "You need to provide a device name").ThrowAsJavaScriptException();
             return env.Null();
         }
 
         if (!info[1].IsString()) {
-            Napi::TypeError::New(env, "You need to provide a property name")
-                .ThrowAsJavaScriptException();
+            Napi::TypeError::New(env, "You need to provide a property name").ThrowAsJavaScriptException();
             return env.Null();
         }
 
         if (!info[2].IsString()) {
-            Napi::TypeError::New(env, "You need to provide an element name")
-                .ThrowAsJavaScriptException();
+            Napi::TypeError::New(env, "You need to provide an element name").ThrowAsJavaScriptException();
             return env.Null();
         }
 
@@ -325,28 +325,24 @@ Napi::Value IndiClient::SendNewText(const Napi::CallbackInfo& info) {
 
     if (info.Length() == 1 && info[0].IsObject()) {
         if (!info[0].IsObject()) {
-            Napi::TypeError::New(env, "You need to provide a property object")
-                .ThrowAsJavaScriptException();
+            Napi::TypeError::New(env, "You need to provide a property object").ThrowAsJavaScriptException();
             return env.Null();
         }
-        TextVector* sv = Napi::ObjectWrap<TextVector>::Unwrap(info[0].As<Napi::Object>());
-        wk = new SendNewTextWorker(env, deferred, this, sv->getHandle());
+        PropertyText* sv = Napi::ObjectWrap<PropertyText>::Unwrap(info[0].As<Napi::Object>());
+        wk = new SendNewTextWorker(env, deferred, this, sv->getProperty());
     } else if (info.Length() == 4) {
         if (!info[0].IsString()) {
-            Napi::TypeError::New(env, "You need to provide a device name")
-                .ThrowAsJavaScriptException();
+            Napi::TypeError::New(env, "You need to provide a device name").ThrowAsJavaScriptException();
             return env.Null();
         }
 
         if (!info[1].IsString()) {
-            Napi::TypeError::New(env, "You need to provide a property name")
-                .ThrowAsJavaScriptException();
+            Napi::TypeError::New(env, "You need to provide a property name").ThrowAsJavaScriptException();
             return env.Null();
         }
 
         if (!info[2].IsString()) {
-            Napi::TypeError::New(env, "You need to provide an element name")
-                .ThrowAsJavaScriptException();
+            Napi::TypeError::New(env, "You need to provide an element name").ThrowAsJavaScriptException();
             return env.Null();
         }
 
@@ -372,18 +368,20 @@ void IndiClient::GetClass(Napi::Env env, Napi::Object exports) {
 
     Napi::Function func = DefineClass(env, "IndiClient",
         {
-            InstanceMethod("setServer", &IndiClient::SetServer),
-            InstanceMethod("connect", &IndiClient::Connect),
-            InstanceMethod("disconnect", &IndiClient::Disconnect),
-            InstanceAccessor("connected", &IndiClient::IsConnected, nullptr),
-            InstanceMethod("watchDevice", &IndiClient::WatchDevice),
-            InstanceMethod("setBLOBMode", &IndiClient::SetBLOBMode),
-            InstanceMethod("getDevice", &IndiClient::GetDevice),
-            InstanceMethod("getDevices", &IndiClient::GetDevices),
-            InstanceMethod("connectDevice", &IndiClient::ConnectDevice),
-            InstanceMethod("sendNewNumber", &IndiClient::SendNewNumber),
-            InstanceMethod("sendNewSwitch", &IndiClient::SendNewSwitch),
-            InstanceMethod("sendNewText", &IndiClient::SendNewText),
+            InstanceAccessor<&IndiClient::GetHost>("host"),
+            InstanceAccessor<&IndiClient::GetPort>("port"),
+            InstanceAccessor<&IndiClient::IsConnected>("connected"),
+            InstanceMethod<&IndiClient::SetServer>("setServer"),
+            InstanceMethod<&IndiClient::Connect>("connect"),
+            InstanceMethod<&IndiClient::Disconnect>("disconnect"),
+            InstanceMethod<&IndiClient::WatchDevice>("watchDevice"),
+            InstanceMethod<&IndiClient::SetBLOBMode>("setBLOBMode"),
+            InstanceMethod<&IndiClient::GetDevice>("getDevice"),
+            InstanceMethod<&IndiClient::GetDevices>("getDevices"),
+            InstanceMethod<&IndiClient::ConnectDevice>("connectDevice"),
+            InstanceMethod<&IndiClient::SendNewNumber>("sendNewNumber"),
+            InstanceMethod<&IndiClient::SendNewSwitch>("sendNewSwitch"),
+            InstanceMethod<&IndiClient::SendNewText>("sendNewText"),
         });
 
     constructor = Napi::Persistent(func);
@@ -413,8 +411,7 @@ void IndiClient::serverDisconnected(int exit_code) {
 
     int* value = new int(exit_code);
     auto callback = [](Napi::Env env, Napi::Function jsCallback, int* exit_code) {
-        jsCallback.Call(
-            {Napi::String::New(env, "disconnected"), Napi::Number::New(env, *exit_code)});
+        jsCallback.Call({Napi::String::New(env, "disconnected"), Napi::Number::New(env, *exit_code)});
         delete exit_code;
     };
 
@@ -423,58 +420,83 @@ void IndiClient::serverDisconnected(int exit_code) {
     // reset();
 }
 
-void IndiClient::newDevice(INDI::BaseDevice* dp) {
+void IndiClient::newDevice(INDI::BaseDevice device) {
     log("NEW DEVICE");
 
-    auto callback = [dp](Napi::Env env, Napi::Function jsCallback) {
-        Napi::Object dev = Device::NewInstance(Napi::External<INDI::BaseDevice>::New(env, dp));
+    auto callback = [device](Napi::Env env, Napi::Function jsCallback) {
+        Napi::Object dev = Device::NewInstance(Napi::External<INDI::BaseDevice>::New(
+            env, new INDI::BaseDevice(device), [](Napi::Env env, INDI::BaseDevice* dp) { delete dp; }));
         jsCallback.Call({Napi::String::New(env, "newDevice"), dev});
     };
 
     _tsfn.BlockingCall(callback);
 }
 
-void IndiClient::removeDevice(INDI::BaseDevice* dp) {
+void IndiClient::removeDevice(INDI::BaseDevice device) {
     log("REMOVE DEVICE");
 
-    auto callback = [dp](Napi::Env env, Napi::Function jsCallback) {
-        std::string name(dp->getDeviceName());
+    std::string name(device.getDeviceName());
+
+    auto callback = [name](Napi::Env env, Napi::Function jsCallback) {
         jsCallback.Call({Napi::String::New(env, "removeDevice"), Napi::String::New(env, name)});
     };
 
     _tsfn.BlockingCall(callback);
 }
 
-void IndiClient::newProperty(INDI::Property* property) {
+void IndiClient::newProperty(INDI::Property property) {
     log("NEW PROPS");
 
-    log(property->getType());
-
     auto callback = [property](Napi::Env env, Napi::Function jsCallback) {
-        Napi::Object prop =
-            Property::NewInstance(Napi::External<INDI::Property>::New(env, property));
+        auto prop = getTypedProperty(env, property);
         jsCallback.Call({Napi::String::New(env, "newProperty"), prop});
     };
 
     _tsfn.BlockingCall(callback);
-};
+}
 
-void IndiClient::removeProperty(INDI::Property* property) {
-    log("REMOVE PROPS");
+void IndiClient::updateProperty(INDI::Property property) {
+    log("UPDATE PROPS");
 
-    std::string name(property->getName());
-    std::string devname(property->getDeviceName());
-
-    auto callback = [name, devname](Napi::Env env, Napi::Function jsCallback) {
-        jsCallback.Call({Napi::String::New(env, "removeProperty"), Napi::String::New(env, name),
-            Napi::String::New(env, devname)});
+    auto callback = [property](Napi::Env env, Napi::Function jsCallback) {
+        auto prop = getTypedProperty(env, property);
+        jsCallback.Call({Napi::String::New(env, "updateProperty"), prop});
     };
 
     _tsfn.BlockingCall(callback);
-};
+}
 
+void IndiClient::removeProperty(INDI::Property property) {
+    log("REMOVE PROPS");
+
+    std::string name(property.getName());
+    std::string devname(property.getDeviceName());
+
+    auto callback = [name, devname](Napi::Env env, Napi::Function jsCallback) {
+        jsCallback.Call(
+            {Napi::String::New(env, "removeProperty"), Napi::String::New(env, name), Napi::String::New(env, devname)});
+    };
+
+    _tsfn.BlockingCall(callback);
+}
+
+void IndiClient::newMessage(INDI::BaseDevice device, int messageID) {
+    log("NEW MSG");
+
+    auto callback = [device, messageID](Napi::Env env, Napi::Function jsCallback) {
+        Napi::Object dev = Device::NewInstance(Napi::External<INDI::BaseDevice>::New(
+            env, new INDI::BaseDevice(device), [](Napi::Env env, INDI::BaseDevice* dp) { delete dp; }));
+        jsCallback.Call({Napi::String::New(env, "newMessage"), dev, Napi::Number::New(env, messageID)});
+    };
+
+    _tsfn.BlockingCall(callback);
+}
+
+/*
 void IndiClient::newNumber(INumberVectorProperty* nvp) {
     log("NEW NUMBER");
+
+    std::cout << "new number" << std::endl;
 
     auto callback = [nvp](Napi::Env env, Napi::Function jsCallback) {
         Napi::Object prop =
@@ -525,25 +547,13 @@ void IndiClient::newBLOB(IBLOB* bp) {
     log("NEW BLOB");
 
     auto callback = [bp](Napi::Env env, Napi::Function jsCallback) {
-        Napi::Object blob =
-            BLOBValue::NewInstance(Napi::External<IBLOB>::New(env, bp));
+        Napi::Object blob = BLOBValue::NewInstance(Napi::External<IBLOB>::New(env, bp));
         jsCallback.Call({Napi::String::New(env, "newBLOB"), blob});
     };
 
     _tsfn.BlockingCall(callback);
 }
-
-void IndiClient::newMessage(INDI::BaseDevice* dp, int messageID) {
-    log("NEW MSG");
-
-    auto callback = [dp, messageID](Napi::Env env, Napi::Function jsCallback) {
-        Napi::Object prop = Device::NewInstance(Napi::External<INDI::BaseDevice>::New(env, dp));
-        jsCallback.Call(
-            {Napi::String::New(env, "newMessage"), prop, Napi::Number::New(env, messageID)});
-    };
-
-    _tsfn.BlockingCall(callback);
-}
+*/
 
 void IndiClient::ConnectWorker::Execute() {
     _result = _client->connectServer();
